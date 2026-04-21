@@ -269,8 +269,21 @@ export default function App() {
           </nav>
         </div>
 
-        {/* Mobile hamburger — hidden on desktop via CSS */}
+        {/* Mobile hamburger + view toggle — hidden on desktop via CSS */}
         <div className="mobile-only">
+          <button
+            className={`view-toggle${isHolo ? ' holo-active' : ''}`}
+            onClick={handleToggle}
+            aria-label="Toggle view"
+          >
+            <span className="toggle-side toggle-side-left">
+              <img src={worldwideIcon} alt="Standard" className="toggle-img" />
+            </span>
+            <span className="toggle-thumb" />
+            <span className="toggle-side toggle-side-right">
+              <img src={hologramIcon} alt="Hologram" className="toggle-img" />
+            </span>
+          </button>
           <button
             className={`hamburger${menuOpen ? ' open' : ''}`}
             onClick={() => {
@@ -335,19 +348,6 @@ export default function App() {
                 <img src={airplaneIcon} alt="Flights" className="toggle-img" />
               </button>
               <ZoomControl zoom={currentZoom} onApply={applyZoom} onReset={resetZoom} />
-              <button
-                className={`view-toggle${isHolo ? ' holo-active' : ''}`}
-                onClick={handleToggle}
-                aria-label="Toggle view"
-              >
-                <span className="toggle-side toggle-side-left">
-                  <img src={worldwideIcon} alt="Standard" className="toggle-img" />
-                </span>
-                <span className="toggle-thumb" />
-                <span className="toggle-side toggle-side-right">
-                  <img src={hologramIcon} alt="Hologram" className="toggle-img" />
-                </span>
-              </button>
             </div>
           </div>
 
