@@ -330,6 +330,10 @@ html, body, #root {
   animation-delay: 0.55s;
 }
 
+.hero-eyebrow-mobile {
+  display: none;
+}
+
 .hero-sub {
   font-size: 0.88rem;
   color: var(--text-muted);
@@ -805,7 +809,17 @@ svg.ctrl-icon {
   }
 
   .hero-title {
-    font-size: clamp(2rem, 8vw, 2.8rem);
+    display: none;
+  }
+
+  .hero-eyebrow-mobile {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-dim);
+    margin: 0 0 0.6rem;
   }
 
   .hero-eyebrow {

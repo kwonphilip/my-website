@@ -463,6 +463,7 @@ export default function App() {
           <h1 className="hero-title">
             Explore<br />Interact<br />Discover
           </h1>
+          <p className="hero-eyebrow-mobile">Explore · Interact · Discover</p>
           {/* Nav-link description fades in when a link is clicked. */}
           <div className="hero-detail" key={active ?? 'default'}>
             {active ? (
