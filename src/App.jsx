@@ -7,6 +7,7 @@ import ControlsGuide from './components/ui/ControlsGuide'
 import {
   NAV_LINKS, LOCATIONS, LOCATIONS_HOLO, NAV_CITY_INDICES, detailToParams,
 } from './data/navConfig.js'
+import { IDLE_RETURN_MS } from './constants.js'
 import worldwideIcon from './assets/icons/worldwide_icon.png'
 import hologramIcon from './assets/icons/hologram_earth_icon_v2.png'
 import cityIcon from './assets/icons/city_icon.png'
@@ -21,6 +22,7 @@ export default function App() {
   const holoRef = useRef(null)
   // tracks which nav index is active on mobile (null = none)
   const mobileNavIdx = useRef(null)
+  const mobileAutoRotateTimer = useRef(null)
   // remembers the pre-mobile zoom so it can be restored on desktop return
   const prevZoomRef = useRef(null)
   const lastAppliedZoomRef = useRef(100)
@@ -105,6 +107,8 @@ export default function App() {
   // Reset all mobile nav markers (city bar, bracket, ping) and resume auto-rotation.
   // Called when the mobile menu closes or the viewport exits mobile width.
   const clearMobileMarkers = useCallback(() => {
+    clearTimeout(mobileAutoRotateTimer.current)
+    mobileAutoRotateTimer.current = null
     const prev = mobileNavIdx.current
     if (prev !== null) {
       activeRef.current?.showCityBar(prev)
@@ -373,6 +377,10 @@ export default function App() {
                     mobileNavIdx.current = i
                     setActive(link.label)
                     setMenuOpen(false)
+                    clearTimeout(mobileAutoRotateTimer.current)
+                    mobileAutoRotateTimer.current = setTimeout(() => {
+                      activeRef.current?.resumeAutoRotate()
+                    }, IDLE_RETURN_MS)
                   }}
                 >
                   {link.label}
