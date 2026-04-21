@@ -1,40 +1,63 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
-import EarthGlobe    from './components/EarthGlobe'
-import HoloEarth     from './components/HoloEarth'
-import ZoomControl   from './components/ui/ZoomControl'
+import EarthGlobe from './components/EarthGlobe'
+import HoloEarth from './components/HoloEarth'
+import ZoomControl from './components/ui/ZoomControl'
 import DetailControl from './components/ui/DetailControl'
 import {
   NAV_LINKS, LOCATIONS, LOCATIONS_HOLO, NAV_CITY_INDICES, detailToParams,
 } from './data/navConfig.js'
 import worldwideIcon from './assets/icons/worldwide_icon.png'
-import hologramIcon  from './assets/icons/hologram_earth_icon_v2.png'
-import cityIcon      from './assets/icons/city_icon.png'
-import airplaneIcon  from './assets/icons/airplane-icon2.png'
-import gridIcon      from './assets/icons/grid_icon.png'
-import rotationIcon  from './assets/icons/rotation_icon.png'
+import hologramIcon from './assets/icons/hologram_earth_icon_v2.png'
+import cityIcon from './assets/icons/city_icon.png'
+import airplaneIcon from './assets/icons/airplane-icon2.png'
+import gridIcon from './assets/icons/grid_icon.png'
+import rotationIcon from './assets/icons/rotation_icon.png'
+import landscapeIcon from './assets/icons/landscape_icon.png'
 import './App.css'
 
+function ControlsGuide() {
+  return (
+    <div className="ctrl-grid">
+      <span /><span>Drag</span>                <span>Rotate the globe</span>
+      <span /><span>Scroll / Pinch</span>      <span>Zoom in &amp; out</span>
+      <span /><span>Nav Links</span>           <span>Jump to location</span>
+
+      <span className="ctrl-hdr">Icons</span>
+      <img src={cityIcon}      className="ctrl-icon" alt="" /><span>Cities</span>              <span>Toggle city markers</span>
+      <img src={airplaneIcon}  className="ctrl-icon" alt="" /><span>Flights</span>             <span>Toggle flight lanes</span>
+      <img src={rotationIcon}  className="ctrl-icon" alt="" /><span>Rotation</span>            <span>Toggle background rotation</span>
+      <img src={worldwideIcon} className="ctrl-icon" alt="" /><span>Globe &#x2194; Holo</span> <span>Switch globe mode</span>
+
+      <span className="ctrl-hdr">Default view only</span>
+      <img src={gridIcon}      className="ctrl-icon" alt="" /><span>Dots</span>                <span>Toggle hex grid</span>
+
+      <span className="ctrl-hdr">Holo view only</span>
+      <span />                                                 <span>Color</span>               <span>Change color scheme</span>
+      <img src={landscapeIcon} className="ctrl-icon" alt="" /><span>Terrain</span>             <span>Adjust terrain density</span>
+    </div>
+  )
+}
 
 export default function App() {
   // ── Refs ──────────────────────────────────────────────────────────────────
-  const globeRef     = useRef(null)
-  const holoRef      = useRef(null)
+  const globeRef = useRef(null)
+  const holoRef = useRef(null)
   // tracks which nav index is active on mobile (null = none)
   const mobileNavIdx = useRef(null)
   // remembers the pre-mobile zoom so it can be restored on desktop return
-  const prevZoomRef        = useRef(null)
+  const prevZoomRef = useRef(null)
   const lastAppliedZoomRef = useRef(100)
 
   // ── State ─────────────────────────────────────────────────────────────────
-  const [active,        setActive]        = useState(null)
-  const [isHolo,        setIsHolo]        = useState(false)
-  const [holoMode,      setHoloMode]      = useState('hologram')
-  const [holoReady,     setHoloReady]     = useState(false)
-  const [showCities,    setShowCities]    = useState(false)
-  const [showFlights,   setShowFlights]   = useState(false)
-  const [showDots,      setShowDots]      = useState(false)
+  const [active, setActive] = useState(null)
+  const [isHolo, setIsHolo] = useState(false)
+  const [holoMode, setHoloMode] = useState('hologram')
+  const [holoReady, setHoloReady] = useState(false)
+  const [showCities, setShowCities] = useState(false)
+  const [showFlights, setShowFlights] = useState(false)
+  const [showDots, setShowDots] = useState(false)
   const [starsRotating, setStarsRotating] = useState(false)
-  const [menuOpen,      setMenuOpen]      = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [appliedDetail, setAppliedDetail] = useState(100)  // committed HoloEarth detail level
 
   // Current active ref — whichever globe is visible responds to nav interactions.
@@ -415,17 +438,18 @@ export default function App() {
         {/* Hero text — left-aligned on desktop, below globe on mobile */}
         <div className="hero">
           <h1 className="hero-title">
-            Welcome to my site.<br />Have fun interacting!<br />Explore my work.
+            Explore<br />Interact<br />Discover
           </h1>
           {/* Nav-link description fades in when a link is clicked. */}
-          {active && (
-            <div className="hero-detail" key={active}>
-              <span className="hero-detail-label">{active}</span>
-              <span className="hero-detail-desc">
-                {NAV_LINKS.find(l => l.label === active)?.desc}
-              </span>
-            </div>
-          )}
+          <div className="hero-detail" key={active ?? 'default'}>
+            <span className="hero-detail-label">{active ?? 'Controls'}</span>
+            <span className="hero-detail-desc">
+              {active
+                ? NAV_LINKS.find(l => l.label === active)?.desc
+                : <ControlsGuide />
+              }
+            </span>
+          </div>
         </div>
       </main>
 
