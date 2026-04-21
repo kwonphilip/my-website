@@ -16,25 +16,35 @@ import landscapeIcon from './assets/icons/landscape_icon.png'
 import './App.css'
 
 function ControlsGuide() {
+  const [open, setOpen] = useState(() => window.innerWidth > 900)
+
   return (
-    <div className="ctrl-grid">
-      <span /><span>Drag</span>                <span>Rotate the globe</span>
-      <span /><span>Scroll / Pinch</span>      <span>Zoom in &amp; out</span>
-      <span /><span>Nav Links</span>           <span>Jump to location</span>
+    <>
+      <button className="ctrl-toggle-btn" onClick={() => setOpen(o => !o)} aria-expanded={open}>
+        <span className="hero-detail-label">Controls</span>
+        <span className={`ctrl-chevron${open ? ' open' : ''}`}>›</span>
+      </button>
+      {open && (
+        <div className="ctrl-grid">
+          <span /><span>Drag</span>                <span>Rotate the globe</span>
+          <span /><span>Scroll / Pinch</span>      <span>Zoom in &amp; out</span>
+          <span /><span>Nav Links</span>           <span>Jump to location</span>
 
-      <span className="ctrl-hdr">Icons</span>
-      <img src={cityIcon}      className="ctrl-icon" alt="" /><span>Cities</span>              <span>Toggle city markers</span>
-      <img src={airplaneIcon}  className="ctrl-icon" alt="" /><span>Flights</span>             <span>Toggle flight lanes</span>
-      <img src={rotationIcon}  className="ctrl-icon" alt="" /><span>Rotation</span>            <span>Toggle background rotation</span>
-      <img src={worldwideIcon} className="ctrl-icon" alt="" /><span>Globe &#x2194; Holo</span> <span>Switch globe mode</span>
+          <span className="ctrl-hdr">Icons</span>
+          <img src={cityIcon}      className="ctrl-icon" alt="" /><span>Cities</span>              <span>Toggle city markers</span>
+          <img src={airplaneIcon}  className="ctrl-icon" alt="" /><span>Flights</span>             <span>Toggle flight lanes</span>
+          <img src={rotationIcon}  className="ctrl-icon" alt="" /><span>Rotation</span>            <span>Toggle background rotation</span>
+          <img src={worldwideIcon} className="ctrl-icon" alt="" /><span>Globe &#x2194; Holo</span> <span>Switch globe mode</span>
 
-      <span className="ctrl-hdr">Default view only</span>
-      <img src={gridIcon}      className="ctrl-icon" alt="" /><span>Dots</span>                <span>Toggle hex grid</span>
+          <span className="ctrl-hdr">Default view only</span>
+          <img src={gridIcon}      className="ctrl-icon" alt="" /><span>Dots</span>                <span>Toggle hex grid</span>
 
-      <span className="ctrl-hdr">Holo view only</span>
-      <span />                                                 <span>Color</span>               <span>Change color scheme</span>
-      <img src={landscapeIcon} className="ctrl-icon" alt="" /><span>Terrain</span>             <span>Adjust terrain density</span>
-    </div>
+          <span className="ctrl-hdr">Holo view only</span>
+          <span />                                                 <span>Color</span>               <span>Change color scheme</span>
+          <img src={landscapeIcon} className="ctrl-icon" alt="" /><span>Terrain</span>             <span>Adjust terrain density</span>
+        </div>
+      )}
+    </>
   )
 }
 
@@ -442,13 +452,16 @@ export default function App() {
           </h1>
           {/* Nav-link description fades in when a link is clicked. */}
           <div className="hero-detail" key={active ?? 'default'}>
-            <span className="hero-detail-label">{active ?? 'Controls'}</span>
-            <span className="hero-detail-desc">
-              {active
-                ? NAV_LINKS.find(l => l.label === active)?.desc
-                : <ControlsGuide />
-              }
-            </span>
+            {active ? (
+              <>
+                <span className="hero-detail-label">{active}</span>
+                <span className="hero-detail-desc">
+                  {NAV_LINKS.find(l => l.label === active)?.desc}
+                </span>
+              </>
+            ) : (
+              <ControlsGuide />
+            )}
           </div>
         </div>
       </main>
