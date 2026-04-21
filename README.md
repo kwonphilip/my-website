@@ -1,3 +1,21 @@
+# Philip Kwon Website
+
+## Credits
+
+- Airplane by Poly by Google [CC-BY] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/fzIXe2paBN9)
+- Skyscraper by Jarlan Perez [CC-BY] (https://creativecommons.org/licenses/by/3.0/) via Poly Pizza (https://poly.pizza/m/7WF09z31G_v)
+- Low Building by Kenney (CC0) (https://poly.pizza/m/dYEbYdPfJr)
+- Skyscraper by Kenney (CC0) (https://poly.pizza/m/obYD8hWLTZ)
+- [Hologram icons](https://www.flaticon.com/free-icons/hologram) created by Freepik - Flaticon
+- [World icons](https://www.flaticon.com/free-icons/world) created by turkkub - Flaticon
+- [Travel icons](https://www.flaticon.com/free-icons/travel) created by juicy_fish - Flaticon
+- [City icons](https://www.flaticon.com/free-icons/city) created by Freepik - Flaticon
+- [Rotate icons](https://www.flaticon.com/free-icons/rotate) created by meaicon - Flaticon
+- [Global icons](https://www.flaticon.com/free-icons/global) created by Freepik - Flaticon
+- [Park icons](https://www.flaticon.com/free-icons/park) created by Freepik - Flaticon
+
+---
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

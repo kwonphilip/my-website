@@ -1,121 +1,434 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useRef, useState, useCallback, useEffect } from 'react'
+import EarthGlobe    from './components/EarthGlobe'
+import HoloEarth     from './components/HoloEarth'
+import ZoomControl   from './components/ui/ZoomControl'
+import DetailControl from './components/ui/DetailControl'
+import {
+  NAV_LINKS, LOCATIONS, LOCATIONS_HOLO, NAV_CITY_INDICES, detailToParams,
+} from './data/navConfig.js'
+import worldwideIcon from './assets/icons/worldwide_icon.png'
+import hologramIcon  from './assets/icons/hologram_earth_icon_v2.png'
+import cityIcon      from './assets/icons/city_icon.png'
+import airplaneIcon  from './assets/icons/airplane-icon2.png'
+import gridIcon      from './assets/icons/grid_icon.png'
+import rotationIcon  from './assets/icons/rotation_icon.png'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+
+export default function App() {
+  // ── Refs ──────────────────────────────────────────────────────────────────
+  const globeRef     = useRef(null)
+  const holoRef      = useRef(null)
+  // tracks which nav index is active on mobile (null = none)
+  const mobileNavIdx = useRef(null)
+  // remembers the pre-mobile zoom so it can be restored on desktop return
+  const prevZoomRef        = useRef(null)
+  const lastAppliedZoomRef = useRef(100)
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  const [active,        setActive]        = useState(null)
+  const [isHolo,        setIsHolo]        = useState(false)
+  const [holoMode,      setHoloMode]      = useState('hologram')
+  const [holoReady,     setHoloReady]     = useState(false)
+  const [showCities,    setShowCities]    = useState(false)
+  const [showFlights,   setShowFlights]   = useState(false)
+  const [showDots,      setShowDots]      = useState(false)
+  const [starsRotating, setStarsRotating] = useState(false)
+  const [menuOpen,      setMenuOpen]      = useState(false)
+  const [appliedDetail, setAppliedDetail] = useState(100)  // committed HoloEarth detail level
+
+  // Current active ref — whichever globe is visible responds to nav interactions.
+  const activeRef = isHolo ? holoRef : globeRef
+
+  // ── Zoom helpers ──────────────────────────────────────────────────────────
+
+  // applyZoom is called both by ZoomControl (user action) and by the mobile-zoom
+  // effect (automatic 70% on narrow screens). It records the last applied value so
+  // the mobile effect can restore it when the window widens again.
+  const applyZoom = useCallback((percent) => {
+    lastAppliedZoomRef.current = percent
+    globeRef.current?.setZoom(percent)
+    holoRef.current?.setZoom(percent)
+  }, [])
+
+  const resetZoom = useCallback(() => applyZoom(100), [applyZoom])
+
+  // ── Effects ───────────────────────────────────────────────────────────────
+
+  // After each view toggle the newly visible renderer needs a resize event to
+  // recalculate its canvas dimensions (the previous one was hidden with display:none).
+  useEffect(() => {
+    window.dispatchEvent(new Event('resize'))
+  }, [isHolo])
+
+  // When the mobile menu closes the globe container grows back to full height.
+  // No resize event fires on DOM changes alone, so we dispatch one manually
+  // after the next frame (letting the DOM repaint first).
+  useEffect(() => {
+    if (!menuOpen) requestAnimationFrame(() => window.dispatchEvent(new Event('resize')))
+  }, [menuOpen])
+
+  // Close the mobile menu and clear markers when the window grows past the
+  // mobile breakpoint (e.g., rotating a tablet to landscape).
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth > 900) {
+        setMenuOpen(false)
+        clearMobileMarkers()
+      }
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Apply 70% zoom automatically on mobile (≤900px) and restore on return to desktop.
+  // This prevents the globe from overfilling the narrow screen.
+  useEffect(() => {
+    const handleMobileZoom = () => {
+      const mobile = window.innerWidth <= 900
+      if (mobile && prevZoomRef.current === null) {
+        // Save the current zoom before overriding.
+        prevZoomRef.current = lastAppliedZoomRef.current
+        applyZoom(70)
+      } else if (!mobile && prevZoomRef.current !== null) {
+        applyZoom(prevZoomRef.current)
+        prevZoomRef.current = null
+      }
+    }
+    handleMobileZoom()
+    window.addEventListener('resize', handleMobileZoom)
+    return () => window.removeEventListener('resize', handleMobileZoom)
+  }, [applyZoom])
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  // Reset all mobile nav markers (city bar, bracket, ping) and resume auto-rotation.
+  // Called when the mobile menu closes or the viewport exits mobile width.
+  const clearMobileMarkers = useCallback(() => {
+    const prev = mobileNavIdx.current
+    if (prev !== null) {
+      activeRef.current?.showCityBar(prev)
+      mobileNavIdx.current = null
+    }
+    activeRef.current?.hideBracket()
+    activeRef.current?.hideAllPings()
+    activeRef.current?.resumeAutoRotate()
+  }, [activeRef])
+
+  // Sync rotation between globes on toggle so the view doesn't jump.
+  const handleToggle = useCallback(() => {
+    if (!isHolo) {
+      const y = globeRef.current?.getRotationY() ?? 0
+      holoRef.current?.setRotationY(y)
+      // Carry over hidden city bar so the target globe matches the source.
+      if (mobileNavIdx.current !== null) holoRef.current?.hideCityBar(mobileNavIdx.current)
+    } else {
+      const y = holoRef.current?.getRotationY() ?? 0
+      globeRef.current?.setRotationY(y)
+      if (mobileNavIdx.current !== null) globeRef.current?.hideCityBar(mobileNavIdx.current)
+    }
+    setIsHolo(h => !h)
+  }, [isHolo])
+
+  // dotStep and dotRadius are derived from appliedDetail and passed directly to
+  // HoloEarth, which triggers an async dot-mesh rebuild when they change.
+  const { step: dotStep, dotRadius } = detailToParams(appliedDetail)
+
+  // ── Nav link interaction handlers (shared between desktop and mobile nav) ─
+  // Defined here so they close over the correct activeRef and don't re-create on
+  // every render (they capture i and coords via the map below, not the closure).
+
+  const buildNavHandlers = (i, coords) => ({
+    onEnter: () => {
+      activeRef.current?.rotateTo(coords.lat, coords.lon)
+      activeRef.current?.showBracket(i)
+      activeRef.current?.showPing(i)
+      activeRef.current?.hideCityBar(i)
+    },
+    onLeave: () => {
+      activeRef.current?.resumeAutoRotate()
+      activeRef.current?.hideBracket()
+      activeRef.current?.hideAllPings()
+      activeRef.current?.showCityBar(i)
+    },
+  })
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <>
-      <section id="center">
+    <div className="app">
+
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <header className="header">
+        <div className="logo">Philip Kwon</div>
+
+        {/* Desktop controls — hidden on mobile via CSS */}
+        <div className="header-right desktop-only">
+          <div className="toggle-wrap">
+            {/* Holo-mode selector + loading indicator (only when holo is active) */}
+            {isHolo && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                {!holoReady && (
+                  <span style={{ color: 'rgba(0,180,255,0.7)', fontSize: '0.7rem', letterSpacing: '0.12em', fontFamily: 'monospace' }}>
+                    Loading…
+                  </span>
+                )}
+                <select className="holo-mode-select" value={holoMode} onChange={e => setHoloMode(e.target.value)}>
+                  <option value="hologram">Hologram</option>
+                  <option value="white">White</option>
+                  <option value="day">Day</option>
+                  <option value="night">Night</option>
+                  <option value="nightalt2">Night Alt</option>
+                </select>
+              </div>
+            )}
+
+            {/* Hex-dot grid toggle — only on standard globe (HoloEarth has its own dots) */}
+            {!isHolo && (
+              <button
+                className={`icon-toggle${showDots ? ' icon-toggle-active' : ''}`}
+                onClick={() => setShowDots(d => !d)}
+                aria-label="Toggle hex dot grid"
+              >
+                <img src={gridIcon} alt="Dots" className="toggle-img" />
+              </button>
+            )}
+
+            {/* Terrain detail — HoloEarth only; owns its own popup state */}
+            <DetailControl
+              isHolo={isHolo}
+              holoReady={holoReady}
+              appliedDetail={appliedDetail}
+              onApply={setAppliedDetail}
+            />
+
+            <button
+              className={`icon-toggle${starsRotating ? ' icon-toggle-active' : ''}`}
+              onClick={() => setStarsRotating(r => !r)}
+              aria-label="Toggle starfield rotation"
+            >
+              <img src={rotationIcon} alt="Rotation" className="toggle-img" />
+            </button>
+            <button
+              className={`icon-toggle${showCities ? ' icon-toggle-active' : ''}`}
+              onClick={() => setShowCities(c => !c)}
+              aria-label="Toggle city markers"
+            >
+              <img src={cityIcon} alt="Cities" className="toggle-img" />
+            </button>
+            <button
+              className={`icon-toggle${showFlights ? ' icon-toggle-active' : ''}`}
+              onClick={() => setShowFlights(f => !f)}
+              aria-label="Toggle flight lanes"
+            >
+              <img src={airplaneIcon} alt="Flights" className="toggle-img" />
+            </button>
+          </div>
+
+          {/* Globe view toggle (standard ↔ hologram) */}
+          <div className="toggle-wrap">
+            <button
+              className={`view-toggle${isHolo ? ' holo-active' : ''}`}
+              onClick={handleToggle}
+              aria-label="Toggle view"
+            >
+              <span className="toggle-side toggle-side-left">
+                <img src={worldwideIcon} alt="Standard" className="toggle-img" />
+              </span>
+              <span className="toggle-thumb" />
+              <span className="toggle-side toggle-side-right">
+                <img src={hologramIcon} alt="Hologram" className="toggle-img" />
+              </span>
+            </button>
+          </div>
+
+          {/* Zoom — owns its own popup state and Escape/outside-click handling */}
+          <ZoomControl onApply={applyZoom} onReset={resetZoom} />
+
+          {/* Desktop navigation */}
+          <nav className="nav">
+            {NAV_LINKS.map((link, i) => {
+              const coords = isHolo ? LOCATIONS_HOLO[i] : LOCATIONS[i]
+              const { onEnter, onLeave } = buildNavHandlers(i, coords)
+              return (
+                <button
+                  key={link.label}
+                  className={`nav-link${active === link.label ? ' active' : ''}`}
+                  onMouseEnter={onEnter}
+                  onMouseLeave={onLeave}
+                  onClick={() => setActive(link.label)}
+                >
+                  {link.label}
+                </button>
+              )
+            })}
+          </nav>
+        </div>
+
+        {/* Mobile hamburger — hidden on desktop via CSS */}
+        <div className="mobile-only">
+          <button
+            className={`hamburger${menuOpen ? ' open' : ''}`}
+            onClick={() => {
+              if (menuOpen) clearMobileMarkers()
+              setMenuOpen(o => !o)
+            }}
+            aria-label="Toggle menu"
+          >
+            <span /><span /><span />
+          </button>
+        </div>
+      </header>
+
+      {/* ── Mobile menu ─────────────────────────────────────────────────── */}
+      {menuOpen && (
+        <div className="mobile-menu">
+          <div className="mobile-menu-controls">
+            {isHolo && (
+              <select className="holo-mode-select" value={holoMode} onChange={e => setHoloMode(e.target.value)}>
+                <option value="hologram">Hologram</option>
+                <option value="white">White</option>
+                <option value="day">Day</option>
+                <option value="night">Night</option>
+                <option value="nightalt2">Night Alt</option>
+              </select>
+            )}
+            <div className="mobile-menu-toggles">
+              {!isHolo && (
+                <button
+                  className={`icon-toggle${showDots ? ' icon-toggle-active' : ''}`}
+                  onClick={() => setShowDots(d => !d)}
+                  aria-label="Toggle hex dot grid"
+                >
+                  <img src={gridIcon} alt="Dots" className="toggle-img" />
+                </button>
+              )}
+              <DetailControl
+                isHolo={isHolo}
+                holoReady={holoReady}
+                appliedDetail={appliedDetail}
+                onApply={setAppliedDetail}
+              />
+              <button
+                className={`icon-toggle${starsRotating ? ' icon-toggle-active' : ''}`}
+                onClick={() => setStarsRotating(r => !r)}
+                aria-label="Toggle starfield rotation"
+              >
+                <img src={rotationIcon} alt="Rotation" className="toggle-img" />
+              </button>
+              <button
+                className={`icon-toggle${showCities ? ' icon-toggle-active' : ''}`}
+                onClick={() => setShowCities(c => !c)}
+                aria-label="Toggle city markers"
+              >
+                <img src={cityIcon} alt="Cities" className="toggle-img" />
+              </button>
+              <button
+                className={`icon-toggle${showFlights ? ' icon-toggle-active' : ''}`}
+                onClick={() => setShowFlights(f => !f)}
+                aria-label="Toggle flight lanes"
+              >
+                <img src={airplaneIcon} alt="Flights" className="toggle-img" />
+              </button>
+              <button
+                className={`view-toggle${isHolo ? ' holo-active' : ''}`}
+                onClick={handleToggle}
+                aria-label="Toggle view"
+              >
+                <span className="toggle-side toggle-side-left">
+                  <img src={worldwideIcon} alt="Standard" className="toggle-img" />
+                </span>
+                <span className="toggle-thumb" />
+                <span className="toggle-side toggle-side-right">
+                  <img src={hologramIcon} alt="Hologram" className="toggle-img" />
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile navigation — tap a link to rotate + zoom to that location */}
+          <nav className="mobile-nav">
+            {NAV_LINKS.map((link, i) => {
+              const coords = isHolo ? LOCATIONS_HOLO[i] : LOCATIONS[i]
+              return (
+                <button
+                  key={link.label}
+                  className={`nav-link${active === link.label ? ' active' : ''}`}
+                  onClick={() => {
+                    // Restore city bar on the previously active marker before switching.
+                    const prev = mobileNavIdx.current
+                    if (prev !== null && prev !== i) activeRef.current?.showCityBar(prev)
+                    activeRef.current?.hideBracket()
+                    activeRef.current?.hideAllPings()
+                    activeRef.current?.rotateTo(coords.lat, coords.lon)
+                    activeRef.current?.showBracket(i)
+                    activeRef.current?.showPing(i)
+                    activeRef.current?.hideCityBar(i)
+                    mobileNavIdx.current = i
+                    setActive(link.label)
+                    setMenuOpen(false)
+                  }}
+                >
+                  {link.label}
+                </button>
+              )
+            })}
+          </nav>
+        </div>
+      )}
+
+      {/* ── Main content ─────────────────────────────────────────────────── */}
+      <main className="main">
+        {/* Both globes are always mounted; only the active one is visible (display:block/none).
+            Keeping both mounted preserves their Three.js scene state across toggles
+            so switching views doesn't require an expensive rebuild. */}
+        <div className="globe-wrap">
+          <div style={{ display: isHolo ? 'none' : 'block', width: '100%', height: '100%' }}>
+            <EarthGlobe
+              key="globe"
+              ref={globeRef}
+              locations={LOCATIONS}
+              showCities={showCities}
+              showFlights={showFlights}
+              showDots={showDots}
+              starsRotating={starsRotating}
+              navCityIndices={NAV_CITY_INDICES}
+            />
+          </div>
+          <div style={{ display: isHolo ? 'block' : 'none', width: '100%', height: '100%' }}>
+            <HoloEarth
+              key="holo"
+              ref={holoRef}
+              locations={LOCATIONS_HOLO}
+              colorMode={holoMode}
+              onReady={() => setHoloReady(true)}
+              showCities={showCities}
+              showFlights={showFlights}
+              starsRotating={starsRotating}
+              navCityIndices={NAV_CITY_INDICES}
+              dotStep={dotStep}
+              dotRadius={dotRadius}
+            />
+          </div>
+        </div>
+
+        {/* Hero text — left-aligned on desktop, below globe on mobile */}
         <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+          <h1 className="hero-title">
+            Welcome to my site.<br />Have fun interacting!<br />Explore my work.
+          </h1>
+          {/* Nav-link description fades in when a link is clicked. */}
+          {active && (
+            <div className="hero-detail" key={active}>
+              <span className="hero-detail-label">{active}</span>
+              <span className="hero-detail-desc">
+                {NAV_LINKS.find(l => l.label === active)?.desc}
+              </span>
+            </div>
+          )}
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      </main>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    </div>
   )
 }
-
-export default App
