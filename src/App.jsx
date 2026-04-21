@@ -18,6 +18,12 @@ import './App.css'
 function ControlsGuide() {
   const [open, setOpen] = useState(() => window.innerWidth > 900)
 
+  useEffect(() => {
+    const onResize = () => { if (window.innerWidth <= 900) setOpen(false) }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
   return (
     <>
       <button className="ctrl-toggle-btn" onClick={() => setOpen(o => !o)} aria-expanded={open}>
@@ -31,16 +37,17 @@ function ControlsGuide() {
           <span /><span>Nav Links</span>           <span>Jump to location</span>
 
           <span className="ctrl-hdr">Icons</span>
+          <img src={rotationIcon}  className="ctrl-icon" alt="" /><span>Rotation</span>            <span>Toggle background rotation</span>
           <img src={cityIcon}      className="ctrl-icon" alt="" /><span>Cities</span>              <span>Toggle city markers</span>
           <img src={airplaneIcon}  className="ctrl-icon" alt="" /><span>Flights</span>             <span>Toggle flight lanes</span>
-          <img src={rotationIcon}  className="ctrl-icon" alt="" /><span>Rotation</span>            <span>Toggle background rotation</span>
+          <svg className="ctrl-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.5"/><line x1="10" y1="10" x2="14.5" y2="14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg><span>Zoom</span>               <span>Adjust globe size</span>
           <img src={worldwideIcon} className="ctrl-icon" alt="" /><span>Globe &#x2194; Holo</span> <span>Switch globe mode</span>
 
           <span className="ctrl-hdr">Default view only</span>
           <img src={gridIcon}      className="ctrl-icon" alt="" /><span>Dots</span>                <span>Toggle hex grid</span>
 
           <span className="ctrl-hdr">Holo view only</span>
-          <span />                                                 <span>Color</span>               <span>Change color scheme</span>
+          <span />                                                 <span>Dropdown</span>               <span>Change color scheme</span>
           <img src={landscapeIcon} className="ctrl-icon" alt="" /><span>Terrain</span>             <span>Adjust terrain density</span>
         </div>
       )}
@@ -193,7 +200,7 @@ export default function App() {
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="header">
-        <div className="logo">Philip Kwon</div>
+        <div className="logo" onClick={() => { setActive(null); clearMobileMarkers() }} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { setActive(null); clearMobileMarkers() } }}>Philip Kwon</div>
 
         {/* Desktop controls — hidden on mobile via CSS */}
         <div className="header-right desktop-only">
@@ -256,6 +263,7 @@ export default function App() {
             >
               <img src={airplaneIcon} alt="Flights" className="toggle-img" />
             </button>
+            <ZoomControl onApply={applyZoom} onReset={resetZoom} />
           </div>
 
           {/* Globe view toggle (standard ↔ hologram) */}
@@ -275,9 +283,6 @@ export default function App() {
             </button>
           </div>
 
-          {/* Zoom — owns its own popup state and Escape/outside-click handling */}
-          <ZoomControl onApply={applyZoom} onReset={resetZoom} />
-
           {/* Desktop navigation */}
           <nav className="nav">
             {NAV_LINKS.map((link, i) => {
@@ -289,7 +294,7 @@ export default function App() {
                   className={`nav-link${active === link.label ? ' active' : ''}`}
                   onMouseEnter={onEnter}
                   onMouseLeave={onLeave}
-                  onClick={() => setActive(link.label)}
+                  onClick={() => setActive(a => a === link.label ? null : link.label)}
                 >
                   {link.label}
                 </button>
@@ -363,6 +368,7 @@ export default function App() {
               >
                 <img src={airplaneIcon} alt="Flights" className="toggle-img" />
               </button>
+              <ZoomControl onApply={applyZoom} onReset={resetZoom} />
               <button
                 className={`view-toggle${isHolo ? ' holo-active' : ''}`}
                 onClick={handleToggle}

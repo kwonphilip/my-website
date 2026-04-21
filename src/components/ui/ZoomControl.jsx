@@ -50,12 +50,12 @@ export default function ZoomControl({ onApply, onReset }) {
   return (
     <div className="zoom-wrap" ref={wrapRef}>
       <button
-        className={`zoom-icon-btn${showZoomPopup ? ' active' : ''}`}
+        className={`icon-toggle${showZoomPopup ? ' icon-toggle-active' : ''}`}
         onClick={() => setShowZoomPopup(v => !v)}
         aria-label="Toggle zoom controls"
+        title="Zoom"
       >
-        {/* Magnifying glass icon — inline SVG avoids an extra asset request. */}
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg className="toggle-img" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.5"/>
           <line x1="10" y1="10" x2="14.5" y2="14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
         </svg>

@@ -47,6 +47,8 @@ html, body, #root {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-shadow: 0 0 18px rgba(91, 173, 255, 0.6);
+  cursor: pointer;
+  user-select: none;
 }
 
 /* ── Nav ─────────────────────────────────── */
@@ -158,8 +160,14 @@ html, body, #root {
   height: 1.15rem;
   object-fit: contain;
   opacity: 0.5;
-  transition: opacity 0.25s, filter 0.25s;
+  transition: opacity 0.25s, filter 0.25s, color 0.25s;
   filter: brightness(0) invert(1);
+}
+
+.icon-toggle svg.toggle-img,
+.icon-toggle-active svg.toggle-img {
+  filter: none;
+  color: white;
 }
 
 /* Active side icon — left (standard) when NOT holo, right (holo) when holo */
@@ -403,6 +411,11 @@ html, body, #root {
   object-fit: contain;
   opacity: 0.5;
   filter: brightness(0) invert(1);
+}
+
+svg.ctrl-icon {
+  filter: none;
+  color: white;
 }
 
 @keyframes heroFadeUp {
