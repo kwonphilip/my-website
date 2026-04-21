@@ -28,7 +28,7 @@ function ControlsGuide() {
     <>
       <button className="ctrl-toggle-btn" onClick={() => setOpen(o => !o)} aria-expanded={open}>
         <span className="hero-detail-label">Controls</span>
-        <span className={`ctrl-chevron${open ? ' open' : ''}`}>›</span>
+        <span className={`ctrl-chevron${open ? ' open' : ''}`}>▸</span>
       </button>
       {open && (
         <div className="ctrl-grid">
