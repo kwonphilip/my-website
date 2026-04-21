@@ -394,6 +394,13 @@ export default function App() {
                   key={link.label}
                   className={`nav-link${active === link.label ? ' active' : ''}`}
                   onClick={() => {
+                    if (active === link.label) {
+                      // Tapping the active link again — deselect and clean up markers.
+                      clearMobileMarkers()
+                      setActive(null)
+                      setMenuOpen(false)
+                      return
+                    }
                     // Restore city bar on the previously active marker before switching.
                     const prev = mobileNavIdx.current
                     if (prev !== null && prev !== i) activeRef.current?.showCityBar(prev)
