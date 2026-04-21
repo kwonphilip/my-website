@@ -860,11 +860,6 @@ svg.ctrl-icon {
     align-items: flex-start;
   }
 
-  .zoom-popup {
-    right: auto;
-    left: 0;
-  }
-
   .detail-popup {
     left: 0;
     right: auto;
