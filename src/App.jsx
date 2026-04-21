@@ -38,6 +38,7 @@ export default function App() {
   const [starsRotating, setStarsRotating] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [appliedDetail, setAppliedDetail] = useState(100)  // committed HoloEarth detail level
+  const [currentZoom, setCurrentZoom] = useState(100)
 
   // Current active ref — whichever globe is visible responds to nav interactions.
   const activeRef = isHolo ? holoRef : globeRef
@@ -49,6 +50,7 @@ export default function App() {
   // the mobile effect can restore it when the window widens again.
   const applyZoom = useCallback((percent) => {
     lastAppliedZoomRef.current = percent
+    setCurrentZoom(percent)
     globeRef.current?.setZoom(percent)
     holoRef.current?.setZoom(percent)
   }, [])
@@ -332,7 +334,7 @@ export default function App() {
               >
                 <img src={airplaneIcon} alt="Flights" className="toggle-img" />
               </button>
-              <ZoomControl onApply={applyZoom} onReset={resetZoom} />
+              <ZoomControl zoom={currentZoom} onApply={applyZoom} onReset={resetZoom} />
               <button
                 className={`view-toggle${isHolo ? ' holo-active' : ''}`}
                 onClick={handleToggle}

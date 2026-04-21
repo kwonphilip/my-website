@@ -12,10 +12,15 @@
 
 import { useState, useRef, useEffect } from 'react'
 
-export default function ZoomControl({ onApply, onReset }) {
+export default function ZoomControl({ zoom = 100, onApply, onReset }) {
   const [showZoomPopup, setShowZoomPopup] = useState(false)
-  const [zoomInput,     setZoomInput]     = useState('100')
+  const [zoomInput,     setZoomInput]     = useState(String(zoom))
   const wrapRef = useRef(null)
+
+  // Keep the displayed value in sync when the parent changes zoom externally (e.g. mobile auto-zoom).
+  useEffect(() => {
+    setZoomInput(String(zoom))
+  }, [zoom])
 
   // Close the popup on Escape key or a click anywhere outside the wrapper div.
   // The effect is only registered when the popup is open — no listeners idle in the
