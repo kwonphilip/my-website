@@ -688,11 +688,23 @@ svg.ctrl-icon {
   flex: 1;
   -webkit-appearance: none;
   appearance: none;
+  height: 20px;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.detail-slider::-webkit-slider-runnable-track {
   height: 3px;
   background: var(--border);
   border-radius: 2px;
-  outline: none;
-  cursor: pointer;
+}
+
+.detail-slider::-moz-range-track {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
 }
 
 .detail-slider::-webkit-slider-thumb {
@@ -700,6 +712,7 @@ svg.ctrl-icon {
   appearance: none;
   width: 14px;
   height: 14px;
+  margin-top: -5.5px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 6px rgba(91, 173, 255, 0.5);
