@@ -48,9 +48,13 @@ export default function AppHeader({
   function logoStep(i) {
     if (!logoActiveRef.current) return
     logoTextRef.current.textContent = LOGO_TEXT.slice(0, i)
-    logoTimerRef.current = i < LOGO_TEXT.length
-      ? setTimeout(() => logoStep(i + 1), 80)
-      : setTimeout(() => logoStep(0), 3000)
+    if (i < LOGO_TEXT.length) {
+      logoCursorRef.current.classList.remove('logo-cursor--blink')
+      logoTimerRef.current = setTimeout(() => logoStep(i + 1), 80)
+    } else {
+      logoCursorRef.current.classList.add('logo-cursor--blink')
+      logoTimerRef.current = setTimeout(() => logoStep(0), 3000)
+    }
   }
 
   function handleLogoEnter() {
@@ -64,6 +68,7 @@ export default function AppHeader({
     logoActiveRef.current = false
     clearTimeout(logoTimerRef.current)
     logoCursorRef.current.style.visibility = 'hidden'
+    logoCursorRef.current.classList.remove('logo-cursor--blink')
     logoTextRef.current.textContent = LOGO_TEXT
   }
 

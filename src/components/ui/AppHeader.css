@@ -21,8 +21,13 @@
   min-width: 8em;
 }
 
-.logo-cursor {
-  opacity: 1;
+.logo-cursor--blink {
+  animation: cursor-blink 0.8s step-start infinite;
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
 }
 
 .header-right {
