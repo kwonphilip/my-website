@@ -18,6 +18,11 @@
   text-shadow: 0 0 18px rgba(91, 173, 255, 0.6);
   cursor: pointer;
   user-select: none;
+  min-width: 8em;
+}
+
+.logo-cursor {
+  opacity: 1;
 }
 
 .header-right {

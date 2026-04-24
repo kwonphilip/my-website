@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import ViewToggle from './ViewToggle'
 import ZoomControl from './ZoomControl'
 import DetailControl from './DetailControl'
@@ -6,6 +7,8 @@ import airplaneIcon from '../../assets/icons/airplane-icon2.png'
 import gridIcon     from '../../assets/icons/grid_icon.png'
 import rotationIcon from '../../assets/icons/rotation_icon.png'
 import './AppHeader.css'
+
+const LOGO_TEXT = 'Philip Kwon'
 
 function buildNavHandlers(i, coords, label, activeRef, onNavHover) {
   return {
@@ -37,6 +40,35 @@ export default function AppHeader({
   onApplyDetail, onApplyZoom, onResetZoom,
   onMenuToggle, onNavHover, onNavClick,
 }) {
+  const logoTextRef   = useRef(null)
+  const logoCursorRef = useRef(null)
+  const logoTimerRef  = useRef(null)
+  const logoActiveRef = useRef(false)
+
+  function logoStep(i) {
+    if (!logoActiveRef.current) return
+    logoTextRef.current.textContent = LOGO_TEXT.slice(0, i)
+    logoTimerRef.current = i < LOGO_TEXT.length
+      ? setTimeout(() => logoStep(i + 1), 80)
+      : setTimeout(() => logoStep(0), 3000)
+  }
+
+  function handleLogoEnter() {
+    logoActiveRef.current = true
+    logoCursorRef.current.style.visibility = 'visible'
+    clearTimeout(logoTimerRef.current)
+    logoStep(0)
+  }
+
+  function handleLogoLeave() {
+    logoActiveRef.current = false
+    clearTimeout(logoTimerRef.current)
+    logoCursorRef.current.style.visibility = 'hidden'
+    logoTextRef.current.textContent = LOGO_TEXT
+  }
+
+  useEffect(() => () => clearTimeout(logoTimerRef.current), [])
+
   return (
     <header className="header">
       <div
@@ -45,8 +77,10 @@ export default function AppHeader({
         role="button"
         tabIndex={0}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onLogoClick() }}
+        onMouseEnter={handleLogoEnter}
+        onMouseLeave={handleLogoLeave}
       >
-        Philip Kwon
+        <span ref={logoTextRef}>{LOGO_TEXT}</span><span ref={logoCursorRef} className="logo-cursor" style={{ visibility: 'hidden' }}>_</span>
       </div>
 
       {/* Desktop controls */}
