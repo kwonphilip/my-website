@@ -40,6 +40,7 @@ export default function App() {
   // ── State ─────────────────────────────────────────────────────────────────
   const [active, setActive] = useState(null)
   const [hoveredNavLink, setHoveredNavLink] = useState(null)
+  const [mobileZoomedLabel, setMobileZoomedLabel] = useState(null)
   const [isHolo, setIsHolo] = useState(false)
   const [holoMode, setHoloMode] = useState('hologram')
   const [holoReady, setHoloReady] = useState(false)
@@ -171,6 +172,7 @@ export default function App() {
     activeRef.current?.hideBracket()
     activeRef.current?.hideAllPings()
     activeRef.current?.resumeAutoRotate()
+    setMobileZoomedLabel(null)
   }, [activeRef])
 
   // Sync rotation between globes on toggle so the view doesn't jump.
@@ -444,10 +446,12 @@ export default function App() {
                     activeRef.current?.hideCityBar(i)
                     mobileNavIdx.current = i
                     setActive(link.label)
+                    setMobileZoomedLabel(link.label)
                     setMenuOpen(false)
                     clearTimeout(mobileAutoRotateTimer.current)
                     mobileAutoRotateTimer.current = setTimeout(() => {
                       activeRef.current?.resumeAutoRotate()
+                      setMobileZoomedLabel(null)
                     }, IDLE_RETURN_MS)
                   }}
                 >
@@ -532,7 +536,8 @@ export default function App() {
           <div className="hud-row"><span className="hud-key">LOC</span><span className="hud-val">{
             (() => {
               if (hoveredCoords) return fmtCoords(hoveredCoords.lat, hoveredCoords.lon)
-              if (hoveredNavLink) { const l = NAV_LINKS.find(n => n.label === hoveredNavLink); return l ? fmtCoords(l.lat, l.lon) : '—' }
+              const navLabel = hoveredNavLink ?? mobileZoomedLabel
+              if (navLabel) { const l = NAV_LINKS.find(n => n.label === navLabel); return l ? fmtCoords(l.lat, l.lon) : '—' }
               return '—'
             })()
           }</span></div>
