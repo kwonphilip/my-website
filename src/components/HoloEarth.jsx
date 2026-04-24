@@ -200,9 +200,10 @@ const HoloEarth = forwardRef(function HoloEarth(
       const t = (-b - Math.sqrt(disc)) / (2 * a)
       if (t < 0) return null
       const hit = lo.clone().addScaledVector(ld, t).normalize()
+      const rawLon = Math.round(Math.atan2(hit.x, hit.z) * 1800 / Math.PI) / 10
       return {
         lat: Math.round(Math.asin(Math.max(-1, Math.min(1, hit.y))) * 1800 / Math.PI) / 10,
-        lon: Math.round(Math.atan2(hit.x, hit.z) * 1800 / Math.PI) / 10,
+        lon: rawLon > 0 ? rawLon - 180 : rawLon + 180,
       }
     },
   }))

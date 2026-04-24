@@ -516,8 +516,9 @@ export default function App() {
           <div className="hud-row"><span className="hud-key">ROT</span><span className="hud-val">{hudRotation}°</span></div>
           <div className="hud-row"><span className="hud-key">LOC</span><span className="hud-val">{
             (() => {
+              if (hoveredCoords) return fmtCoords(hoveredCoords.lat, hoveredCoords.lon)
               if (active) { const l = NAV_LINKS.find(n => n.label === active); return l ? fmtCoords(l.lat, l.lon) : '—' }
-              return hoveredCoords ? fmtCoords(hoveredCoords.lat, hoveredCoords.lon) : '—'
+              return '—'
             })()
           }</span></div>
         </div>
