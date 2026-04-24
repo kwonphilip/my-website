@@ -326,8 +326,19 @@ html, body, #root {
   letter-spacing: -0.03em;
   margin-bottom: 2rem;
   text-shadow: 0 0 40px rgba(91, 173, 255, 0.25);
-  animation: heroFadeUp 0.7s ease both;
-  animation-delay: 0.55s;
+}
+
+.hero-title-line {
+  display: block;
+  min-height: 1.07em;
+}
+
+.typing-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  color: var(--accent);
+  font-weight: 300;
+  animation: cursorBlink 0.7s step-end infinite;
 }
 
 .hero-eyebrow-mobile {
@@ -437,6 +448,43 @@ svg.ctrl-icon {
 @keyframes heroFadeUp {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ── HUD readout ─────────────────────────── */
+
+.hud {
+  position: absolute;
+  bottom: 1.6rem;
+  right: 2rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-family: monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.hud-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.hud-key {
+  color: var(--accent-dim);
+  min-width: 2.8rem;
+}
+
+.hud-val {
+  color: var(--text);
 }
 
 @keyframes heroExpandWidth {
@@ -817,6 +865,7 @@ svg.ctrl-icon {
 @media (max-width: 900px) {
   .desktop-only { display: none !important; }
   .mobile-only  { display: flex; align-items: center; gap: 0.75rem; }
+  .hud { display: none; }
 
   .header {
     padding: 1rem 1.2rem;

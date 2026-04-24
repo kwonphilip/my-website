@@ -16,6 +16,14 @@ import gridIcon from './assets/icons/grid_icon.png'
 import rotationIcon from './assets/icons/rotation_icon.png'
 import './App.css'
 
+const HERO_WORDS = ['Explore', 'Interact', 'Discover']
+
+function fmtCoords(lat, lon) {
+  const la = Math.abs(lat).toFixed(1)
+  const lo = Math.abs(lon).toFixed(1)
+  return `${la}°${lat >= 0 ? 'N' : 'S'} ${lo}°${lon >= 0 ? 'E' : 'W'}`
+}
+
 export default function App() {
   // ── Refs ──────────────────────────────────────────────────────────────────
   const globeRef = useRef(null)
@@ -39,9 +47,15 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [appliedDetail, setAppliedDetail] = useState(100)  // committed HoloEarth detail level
   const [currentZoom, setCurrentZoom] = useState(100)
+  const [typedWords, setTypedWords] = useState(['', '', ''])
+  const [hudRotation, setHudRotation] = useState(0)
+  const [hoveredCoords, setHoveredCoords] = useState(null)
 
   // Current active ref — whichever globe is visible responds to nav interactions.
   const activeRef = isHolo ? holoRef : globeRef
+
+  // Ref so the HUD polling interval can read isHolo without stale closure.
+  const isHoloRef = useRef(isHolo)
 
   // ── Zoom helpers ──────────────────────────────────────────────────────────
 
@@ -104,6 +118,36 @@ export default function App() {
     return () => window.removeEventListener('resize', handleMobileZoom)
   }, [applyZoom])
 
+  // Keep isHoloRef current so the HUD interval doesn't capture a stale value.
+  useEffect(() => { isHoloRef.current = isHolo }, [isHolo])
+
+  // Typing animation: schedule one setTimeout per character across all three words.
+  useEffect(() => {
+    const timers = []
+    let delay = 400
+    HERO_WORDS.forEach((word, wi) => {
+      for (let ci = 1; ci <= word.length; ci++) {
+        const chars = ci
+        timers.push(setTimeout(() => {
+          setTypedWords(prev => { const next = [...prev]; next[wi] = word.slice(0, chars); return next })
+        }, delay))
+        delay += 78
+      }
+      delay += 280
+    })
+    return () => timers.forEach(clearTimeout)
+  }, [])
+
+  // HUD rotation polling — reads globe rotation every 150ms.
+  useEffect(() => {
+    const id = setInterval(() => {
+      const ref = isHoloRef.current ? holoRef : globeRef
+      const y = ref.current?.getRotationY() ?? 0
+      setHudRotation(Math.round(((y * 180 / Math.PI) % 360 + 360) % 360))
+    }, 150)
+    return () => clearInterval(id)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   // Reset all mobile nav markers (city bar, bracket, ping) and resume auto-rotation.
@@ -139,6 +183,13 @@ export default function App() {
   // dotStep and dotRadius are derived from appliedDetail and passed directly to
   // HoloEarth, which triggers an async dot-mesh rebuild when they change.
   const { step: dotStep, dotRadius } = detailToParams(appliedDetail)
+
+  const handleGlobeMouseMove = useCallback((e) => {
+    const ref = isHoloRef.current ? holoRef : globeRef
+    setHoveredCoords(ref.current?.getLatLonFromScreen(e.clientX, e.clientY) ?? null)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleGlobeMouseLeave = useCallback(() => setHoveredCoords(null), [])
 
   // ── Nav link interaction handlers (shared between desktop and mobile nav) ─
   // Defined here so they close over the correct activeRef and don't re-create on
@@ -398,7 +449,7 @@ export default function App() {
         {/* Both globes are always mounted; only the active one is visible (display:block/none).
             Keeping both mounted preserves their Three.js scene state across toggles
             so switching views doesn't require an expensive rebuild. */}
-        <div className="globe-wrap">
+        <div className="globe-wrap" onMouseMove={handleGlobeMouseMove} onMouseLeave={handleGlobeMouseLeave}>
           <div style={{ display: isHolo ? 'none' : 'block', width: '100%', height: '100%' }}>
             <EarthGlobe
               key="globe"
@@ -431,7 +482,16 @@ export default function App() {
         {/* Hero text — left-aligned on desktop, below globe on mobile */}
         <div className="hero">
           <h1 className="hero-title">
-            Explore<br />Interact<br />Discover
+            {HERO_WORDS.map((word, i) => {
+              const prevDone = HERO_WORDS.slice(0, i).every((w, j) => typedWords[j].length === w.length)
+              const showCursor = prevDone && typedWords[i].length < word.length
+              return (
+                <span key={word} className="hero-title-line">
+                  {typedWords[i]}
+                  {showCursor && <span className="typing-cursor" aria-hidden="true">|</span>}
+                </span>
+              )
+            })}
           </h1>
           <p className="hero-eyebrow-mobile">Explore · Interact · Discover</p>
           {/* Nav-link description fades in when a link is clicked. */}
@@ -447,6 +507,19 @@ export default function App() {
               <ControlsGuide />
             )}
           </div>
+        </div>
+
+        {/* HUD readout — desktop only, bottom-right corner */}
+        <div className="hud" aria-hidden="true">
+          <div className="hud-row"><span className="hud-key">ZOOM</span><span className="hud-val">{currentZoom}%</span></div>
+          <div className="hud-row"><span className="hud-key">MODE</span><span className="hud-val">{isHolo ? 'HOLO' : 'STD'}</span></div>
+          <div className="hud-row"><span className="hud-key">ROT</span><span className="hud-val">{hudRotation}°</span></div>
+          <div className="hud-row"><span className="hud-key">LOC</span><span className="hud-val">{
+            (() => {
+              if (active) { const l = NAV_LINKS.find(n => n.label === active); return l ? fmtCoords(l.lat, l.lon) : '—' }
+              return hoveredCoords ? fmtCoords(hoveredCoords.lat, hoveredCoords.lon) : '—'
+            })()
+          }</span></div>
         </div>
       </main>
 

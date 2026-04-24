@@ -178,6 +178,33 @@ const HoloEarth = forwardRef(function HoloEarth(
       s.zoomScale  = percent / 100
       s.targetZoom = (s.autoRotate ? ZOOM_DEFAULT : ZOOM_IN) / s.zoomScale
     },
+    getLatLonFromScreen(clientX, clientY) {
+      const s = stateRef.current
+      if (!s.globe || !s.camera) return null
+      const canvas = mountRef.current?.querySelector('canvas')
+      if (!canvas) return null
+      const rect = canvas.getBoundingClientRect()
+      const ndcX =  ((clientX - rect.left) / rect.width)  * 2 - 1
+      const ndcY = -((clientY - rect.top)  / rect.height) * 2 + 1
+      const raycaster = new THREE.Raycaster()
+      raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), s.camera)
+      const { origin, direction } = raycaster.ray
+      // Transform ray into globe local space — this automatically undoes the +π
+      // starting rotation, so lat/lon comes out in standard geographic coordinates.
+      const inv = s.globe.matrixWorld.clone().invert()
+      const lo  = origin.clone().applyMatrix4(inv)
+      const ld  = direction.clone().transformDirection(inv)
+      const a = ld.dot(ld), b = 2 * lo.dot(ld), c = lo.dot(lo) - 1
+      const disc = b * b - 4 * a * c
+      if (disc < 0) return null
+      const t = (-b - Math.sqrt(disc)) / (2 * a)
+      if (t < 0) return null
+      const hit = lo.clone().addScaledVector(ld, t).normalize()
+      return {
+        lat: Math.round(Math.asin(Math.max(-1, Math.min(1, hit.y))) * 1800 / Math.PI) / 10,
+        lon: Math.round(Math.atan2(hit.x, hit.z) * 1800 / Math.PI) / 10,
+      }
+    },
   }))
 
   // ── Scene setup (runs once on mount) ───────────────────────────────────
