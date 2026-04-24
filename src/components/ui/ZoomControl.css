@@ -1,0 +1,130 @@
+.zoom-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.zoom-popup {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  z-index: 100;
+  background: rgba(0, 6, 18, 0.96);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.1rem 0.9rem;
+  min-width: 13rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(91, 173, 255, 0.08);
+}
+
+.zoom-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.2rem;
+}
+
+.zoom-popup-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.zoom-popup-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0.1rem 0.25rem;
+  transition: color 0.15s;
+}
+
+.zoom-popup-close:hover {
+  color: var(--text);
+}
+
+.zoom-popup-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.zoom-popup-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.zoom-popup-input {
+  width: 4rem;
+  background: rgba(0, 10, 24, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.82rem;
+  padding: 0.3rem 0.5rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.zoom-popup-input:focus {
+  border-color: var(--accent);
+}
+
+.zoom-popup-input::-webkit-inner-spin-button,
+.zoom-popup-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.zoom-popup-apply {
+  background: rgba(91, 173, 255, 0.1);
+  border: 1px solid var(--accent-dim);
+  border-radius: 3px;
+  color: var(--accent);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.6rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.zoom-popup-apply:hover {
+  background: rgba(91, 173, 255, 0.18);
+  border-color: var(--accent);
+}
+
+.zoom-popup-reset {
+  background: none;
+  border: 1px solid rgba(91, 173, 255, 0.5);
+  border-radius: 3px;
+  color: rgba(180, 218, 255, 0.5);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.6rem;
+  width: 100%;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.zoom-popup-reset:hover {
+  border-color: var(--accent-dim);
+  color: var(--text);
+}

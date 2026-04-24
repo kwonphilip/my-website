@@ -21,6 +21,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import landscapeIcon from '../../assets/icons/landscape_icon.png'
+import './ZoomControl.css'
+import './DetailControl.css'
 
 export default function DetailControl({ isHolo, holoReady, appliedDetail, onApply }) {
   const [showDetailPopup, setShowDetailPopup] = useState(false)

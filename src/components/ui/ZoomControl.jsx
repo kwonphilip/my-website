@@ -11,6 +11,7 @@
  */
 
 import { useState, useRef, useEffect } from 'react'
+import './ZoomControl.css'
 
 export default function ZoomControl({ zoom = 100, onApply, onReset }) {
   const [showZoomPopup, setShowZoomPopup] = useState(false)
