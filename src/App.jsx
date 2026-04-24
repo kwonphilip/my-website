@@ -34,9 +34,12 @@ export default function App() {
   // remembers the pre-mobile zoom so it can be restored on desktop return
   const prevZoomRef = useRef(null)
   const lastAppliedZoomRef = useRef(100)
+  const mousePosRef = useRef(null)
+  const mouseOnGlobeRef = useRef(false)
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [active, setActive] = useState(null)
+  const [hoveredNavLink, setHoveredNavLink] = useState(null)
   const [isHolo, setIsHolo] = useState(false)
   const [holoMode, setHoloMode] = useState('hologram')
   const [holoReady, setHoloReady] = useState(false)
@@ -138,12 +141,17 @@ export default function App() {
     return () => timers.forEach(clearTimeout)
   }, [])
 
-  // HUD rotation polling — reads globe rotation every 150ms.
+  // HUD polling — reads globe rotation every 150ms and re-queries mouse coords
+  // so that LOC updates even when the globe rotates under a stationary cursor.
   useEffect(() => {
     const id = setInterval(() => {
       const ref = isHoloRef.current ? holoRef : globeRef
       const y = ref.current?.getRotationY() ?? 0
       setHudRotation(Math.round(((y * 180 / Math.PI) % 360 + 360) % 360))
+      if (mouseOnGlobeRef.current && mousePosRef.current) {
+        const { x, y: my } = mousePosRef.current
+        setHoveredCoords(ref.current?.getLatLonFromScreen(x, my) ?? null)
+      }
     }, 150)
     return () => clearInterval(id)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -185,24 +193,31 @@ export default function App() {
   const { step: dotStep, dotRadius } = detailToParams(appliedDetail)
 
   const handleGlobeMouseMove = useCallback((e) => {
+    mousePosRef.current = { x: e.clientX, y: e.clientY }
+    mouseOnGlobeRef.current = true
     const ref = isHoloRef.current ? holoRef : globeRef
     setHoveredCoords(ref.current?.getLatLonFromScreen(e.clientX, e.clientY) ?? null)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleGlobeMouseLeave = useCallback(() => setHoveredCoords(null), [])
+  const handleGlobeMouseLeave = useCallback(() => {
+    mouseOnGlobeRef.current = false
+    setHoveredCoords(null)
+  }, [])
 
   // ── Nav link interaction handlers (shared between desktop and mobile nav) ─
   // Defined here so they close over the correct activeRef and don't re-create on
   // every render (they capture i and coords via the map below, not the closure).
 
-  const buildNavHandlers = (i, coords) => ({
+  const buildNavHandlers = (i, coords, label) => ({
     onEnter: () => {
+      setHoveredNavLink(label)
       activeRef.current?.rotateTo(coords.lat, coords.lon)
       activeRef.current?.showBracket(i)
       activeRef.current?.showPing(i)
       activeRef.current?.hideCityBar(i)
     },
     onLeave: () => {
+      setHoveredNavLink(null)
       activeRef.current?.resumeAutoRotate()
       activeRef.current?.hideBracket()
       activeRef.current?.hideAllPings()
@@ -304,7 +319,7 @@ export default function App() {
           <nav className="nav">
             {NAV_LINKS.map((link, i) => {
               const coords = isHolo ? LOCATIONS_HOLO[i] : LOCATIONS[i]
-              const { onEnter, onLeave } = buildNavHandlers(i, coords)
+              const { onEnter, onLeave } = buildNavHandlers(i, coords, link.label)
               return (
                 <button
                   key={link.label}
@@ -517,7 +532,7 @@ export default function App() {
           <div className="hud-row"><span className="hud-key">LOC</span><span className="hud-val">{
             (() => {
               if (hoveredCoords) return fmtCoords(hoveredCoords.lat, hoveredCoords.lon)
-              if (active) { const l = NAV_LINKS.find(n => n.label === active); return l ? fmtCoords(l.lat, l.lon) : '—' }
+              if (hoveredNavLink) { const l = NAV_LINKS.find(n => n.label === hoveredNavLink); return l ? fmtCoords(l.lat, l.lon) : '—' }
               return '—'
             })()
           }</span></div>
