@@ -46,7 +46,7 @@ import {
 const { PI } = Math
 
 const EarthGlobe = forwardRef(function EarthGlobe(
-  { locations = [], initialY = 0, showCities = true, showFlights = true, showDots = true, starsRotating = true, navCityIndices = [] },
+  { locations = [], initialY = 0, showCities = true, showFlights = true, showDots = true, starsRotating = true, showISS = false, navCityIndices = [] },
   ref,
 ) {
   const mountRef  = useRef(null)
@@ -79,6 +79,9 @@ const EarthGlobe = forwardRef(function EarthGlobe(
     cityGroup:       null,
     citySubGroups:   [],
     navCityIndices:  navCityIndices,
+    updateISS:       null,
+    disposeISS:      null,
+    setISSVisible:   null,
     isDragging:      false,
     dragLastX:       0,
     dragLastY:       0,
@@ -228,10 +231,10 @@ const EarthGlobe = forwardRef(function EarthGlobe(
     finalComposer.addPass(new RenderPass(scene, camera))
     finalComposer.addPass(finalPass)
 
-    const { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats } = buildGlobeScene(locations, w, h)
+    const { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats, updateISS, disposeISS, setISSVisible } = buildGlobeScene(locations, w, h)
     scene.add(starSphere)
     scene.add(globe)
-    Object.assign(s, { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats })
+    Object.assign(s, { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats, updateISS, disposeISS, setISSVisible })
     globe.rotation.order  = 'XZY'
     globe.rotation.y      = initialY
     cityGroup.visible     = showCities
@@ -275,6 +278,7 @@ const EarthGlobe = forwardRef(function EarthGlobe(
       if (st.dotsMat)   st.dotsMat.uniforms.uTime.value   = t
       if (st.lanesMat)    st.lanesMat.uniforms.uTime.value  = t
       if (st.updatePlanes) st.updatePlanes(t)
+      if (st.updateISS)    st.updateISS(t)
       if (st.pingMat)   st.pingMat.uniforms.uTime.value   = t
       for (const m of st.buildingMats) m.uniforms.uTime.value = t
 
@@ -326,6 +330,7 @@ const EarthGlobe = forwardRef(function EarthGlobe(
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
       s.landTex?.dispose()
       s.cityLabelSystem?.dispose()
+      s.disposeISS?.()
       renderer.dispose()
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -346,6 +351,11 @@ const EarthGlobe = forwardRef(function EarthGlobe(
   useEffect(() => {
     if (stateRef.current.dotsMesh) stateRef.current.dotsMesh.visible = showDots
   }, [showDots])
+
+  // ── ISS visibility toggle ───────────────────────────────────────────────
+  useEffect(() => {
+    stateRef.current.setISSVisible?.(showISS)
+  }, [showISS])
 
   // ── Starfield rotation toggle ───────────────────────────────────────────
   useEffect(() => {

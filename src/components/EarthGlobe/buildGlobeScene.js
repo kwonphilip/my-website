@@ -30,6 +30,7 @@ import { DOTS_VERT, DOTS_FRAG }  from '../../shaders/dotShaders.js'
 import { buildShippingLanes }    from '../../builders/buildShippingLanes.js'
 import { buildCityBuildings }    from '../../builders/buildCityBuildings.js'
 import { buildPingsAndBrackets } from '../../builders/buildPingsAndBrackets.js'
+import { buildISSTracker }       from '../../builders/buildISSTracker.js'
 import { CITIES }                from '../../data/cities.js'
 import { ROUTES }                from '../../data/routes.js'
 import { RADIUS, DOT_SPHERE_SEGMENTS, PLANE_ORBIT_RADIUS } from './constants.js'
@@ -121,6 +122,9 @@ export function buildGlobeScene(locations, w, h) {
     planeColor:  0x999999,           // dimmed — global UnrealBloomPass amplifies brightness
   })
 
+  // Real-time ISS tracker — 3D model + orbit trace + sub-satellite ring.
+  const { updateISS, disposeISS, setISSVisible } = buildISSTracker(globe, RADIUS)
+
   // Starfield — giant sphere textured on its inside surface with 8k_stars.jpg.
   // Added to the scene directly (not globe group) so it rotates independently.
   const starsTex    = new THREE.TextureLoader().load(starsUrl)
@@ -136,5 +140,6 @@ export function buildGlobeScene(locations, w, h) {
     lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints,
     bracketGroups, bracketMat,
     cityGroup, citySubGroups, buildingMats,
+    updateISS, disposeISS, setISSVisible,
   }
 }

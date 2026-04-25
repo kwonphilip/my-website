@@ -36,6 +36,7 @@ export default function App() {
   const [showCities, setShowCities] = useState(false)
   const [showFlights, setShowFlights] = useState(false)
   const [showDots, setShowDots] = useState(false)
+  const [showISS, setShowISS] = useState(false)
   const [starsRotating, setStarsRotating] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [appliedDetail, setAppliedDetail] = useState(100)
@@ -165,7 +166,7 @@ export default function App() {
       <AppHeader
         isHolo={isHolo} holoMode={holoMode} holoReady={holoReady}
         showDots={showDots} showCities={showCities} showFlights={showFlights}
-        starsRotating={starsRotating} appliedDetail={appliedDetail}
+        showISS={showISS} starsRotating={starsRotating} appliedDetail={appliedDetail}
         currentZoom={currentZoom} menuOpen={menuOpen} active={active}
         navLinks={NAV_LINKS} locations={LOCATIONS} holoLocations={LOCATIONS_HOLO}
         activeRef={activeRef}
@@ -173,7 +174,7 @@ export default function App() {
         onLogoClick={() => { setActive(null); clearMobileMarkers() }}
         onHoloMode={setHoloMode}
         onShowDots={setShowDots} onShowCities={setShowCities}
-        onShowFlights={setShowFlights} onStarsRotating={setStarsRotating}
+        onShowFlights={setShowFlights} onShowISS={setShowISS} onStarsRotating={setStarsRotating}
         onApplyDetail={setAppliedDetail} onApplyZoom={applyZoom} onResetZoom={resetZoom}
         onMenuToggle={() => { if (menuOpen) clearMobileMarkers(); setMenuOpen(o => !o) }}
         onNavHover={setHoveredNavLink} onNavClick={setActive}
@@ -183,12 +184,12 @@ export default function App() {
         <MobileMenu
           isHolo={isHolo} holoMode={holoMode} holoReady={holoReady}
           showDots={showDots} showCities={showCities} showFlights={showFlights}
-          starsRotating={starsRotating} appliedDetail={appliedDetail}
+          showISS={showISS} starsRotating={starsRotating} appliedDetail={appliedDetail}
           currentZoom={currentZoom} active={active}
           navLinks={NAV_LINKS} locations={LOCATIONS} holoLocations={LOCATIONS_HOLO}
           onHoloMode={setHoloMode}
           onShowDots={setShowDots} onShowCities={setShowCities}
-          onShowFlights={setShowFlights} onStarsRotating={setStarsRotating}
+          onShowFlights={setShowFlights} onShowISS={setShowISS} onStarsRotating={setStarsRotating}
           onApplyDetail={setAppliedDetail} onApplyZoom={applyZoom} onResetZoom={resetZoom}
           onNavTap={handleMobileNavTap}
         />
@@ -205,6 +206,7 @@ export default function App() {
               showCities={showCities}
               showFlights={showFlights}
               showDots={showDots}
+              showISS={showISS}
               starsRotating={starsRotating}
               navCityIndices={NAV_CITY_INDICES}
             />
@@ -218,6 +220,7 @@ export default function App() {
               onReady={() => setHoloReady(true)}
               showCities={showCities}
               showFlights={showFlights}
+              showISS={showISS}
               starsRotating={starsRotating}
               navCityIndices={NAV_CITY_INDICES}
               dotStep={dotStep}

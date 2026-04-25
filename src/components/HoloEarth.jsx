@@ -46,6 +46,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { latLonToVec3 }          from '../utils/geo.js'
 import { buildShippingLanes }    from '../builders/buildShippingLanes.js'
 import { buildPingsAndBrackets } from '../builders/buildPingsAndBrackets.js'
+import { buildISSTracker }       from '../builders/buildISSTracker.js'
 import { ROUTES, shiftRoutesForHolo } from '../data/routes.js'
 import starsUrl from '../assets/textures/8k_stars.jpg'
 
@@ -69,7 +70,7 @@ const { PI } = Math
 const HOLO_ROUTES = shiftRoutesForHolo(ROUTES)
 
 const HoloEarth = forwardRef(function HoloEarth(
-  { locations = [], initialY = 0, colorMode = 'hologram', onReady, showCities = true, showFlights = true, starsRotating = true, navCityIndices = [], dotStep = STEP, dotRadius = DOT_RADIUS },
+  { locations = [], initialY = 0, colorMode = 'hologram', onReady, showCities = true, showFlights = true, starsRotating = true, showISS = false, navCityIndices = [], dotStep = STEP, dotRadius = DOT_RADIUS },
   ref,
 ) {
   const mountRef      = useRef(null)
@@ -106,6 +107,9 @@ const HoloEarth = forwardRef(function HoloEarth(
     navCityIndices:       navCityIndices,
     pendingHideCityNavIdx: null,
     colorMode:      colorMode,
+    updateISS:      null,
+    disposeISS:     null,
+    setISSVisible:  null,
     isDragging:     false,
     dragLastX:      0,
     dragLastY:      0,
@@ -321,6 +325,12 @@ const HoloEarth = forwardRef(function HoloEarth(
     s.updatePlanes  = updatePlanes
     lanesGroup.visible = showFlights
 
+    // ISS tracker — uses shiftLon so positions align with HoloEarth's +π rotation.
+    const { updateISS, disposeISS, setISSVisible } = buildISSTracker(globe, 1.0, { shiftLon })
+    s.updateISS    = updateISS
+    s.disposeISS   = disposeISS
+    s.setISSVisible = setISSVisible
+
     // ── Elevation dots and city bars (async) ─────────────────────────────
     // See ./HoloEarth/buildElevationDots.js for the full pipeline.
     // `cancelled` guards against React StrictMode's double-invoke: the first
@@ -399,9 +409,10 @@ const HoloEarth = forwardRef(function HoloEarth(
       if (st.starSphere && st.starsRotating) st.starSphere.rotation.y += 0.0002
 
       const t = (Date.now() - startTime) / 1000
-      if (st.lanesMat)    st.lanesMat.uniforms.uTime.value  = t
+      if (st.lanesMat)     st.lanesMat.uniforms.uTime.value  = t
       if (st.updatePlanes) st.updatePlanes(t)
-      if (st.pingMat)   st.pingMat.uniforms.uTime.value   = t
+      if (st.updateISS)    st.updateISS(t)
+      if (st.pingMat)      st.pingMat.uniforms.uTime.value   = t
       for (const m of st.buildingMats) m.uniforms.uTime.value = t
 
       // Pass 1: bloom — renders only BLOOM_LAYER objects to offscreen buffer.
@@ -458,6 +469,7 @@ const HoloEarth = forwardRef(function HoloEarth(
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
       s.starSphere?.material.map?.dispose()
       s.cityLabelSystem?.dispose()
+      s.disposeISS?.()
       renderer.dispose()
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -494,6 +506,11 @@ const HoloEarth = forwardRef(function HoloEarth(
   useEffect(() => {
     if (stateRef.current.lanesGroup) stateRef.current.lanesGroup.visible = showFlights
   }, [showFlights])
+
+  // ── ISS visibility toggle ───────────────────────────────────────────────
+  useEffect(() => {
+    stateRef.current.setISSVisible?.(showISS)
+  }, [showISS])
 
   // ── Starfield rotation toggle ───────────────────────────────────────────
   useEffect(() => {
