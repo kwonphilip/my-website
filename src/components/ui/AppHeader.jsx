@@ -50,7 +50,7 @@ export default function AppHeader({
     logoTextRef.current.textContent = LOGO_TEXT.slice(0, i)
     if (i < LOGO_TEXT.length) {
       logoCursorRef.current.classList.remove('logo-cursor--blink')
-      logoTimerRef.current = setTimeout(() => logoStep(i + 1), 80)
+      logoTimerRef.current = setTimeout(() => logoStep(i + 1), 40)
     } else {
       logoCursorRef.current.classList.add('logo-cursor--blink')
       logoTimerRef.current = setTimeout(() => logoStep(0), 3000)
