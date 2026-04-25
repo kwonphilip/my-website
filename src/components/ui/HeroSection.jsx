@@ -28,7 +28,6 @@ export default function HeroSection({ typedWords, active }) {
             }, delay))
             delay += 78
           }
-          delay += 280
         })
       }
       return () => timers.forEach(clearTimeout)
