@@ -5,7 +5,7 @@ export function useTypingAnimation(words) {
 
   useEffect(() => {
     const timers = []
-    let delay = 400
+    let delay = 1800
     words.forEach((word, wi) => {
       for (let ci = 1; ci <= word.length; ci++) {
         const chars = ci
