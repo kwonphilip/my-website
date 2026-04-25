@@ -202,6 +202,8 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
 
   return {
     updateISS,
+    issGroup,
+    issRing: ring,
     setISSVisible(v) {
       enabled = v
       if (!v) {

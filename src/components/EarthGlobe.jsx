@@ -82,6 +82,8 @@ const EarthGlobe = forwardRef(function EarthGlobe(
     updateISS:       null,
     disposeISS:      null,
     setISSVisible:   null,
+    issGroup:        null,
+    issRing:         null,
     isDragging:      false,
     dragLastX:       0,
     dragLastY:       0,
@@ -231,10 +233,10 @@ const EarthGlobe = forwardRef(function EarthGlobe(
     finalComposer.addPass(new RenderPass(scene, camera))
     finalComposer.addPass(finalPass)
 
-    const { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats, updateISS, disposeISS, setISSVisible } = buildGlobeScene(locations, w, h)
+    const { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats, updateISS, disposeISS, setISSVisible, issGroup, issRing } = buildGlobeScene(locations, w, h)
     scene.add(starSphere)
     scene.add(globe)
-    Object.assign(s, { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats, updateISS, disposeISS, setISSVisible })
+    Object.assign(s, { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats, updateISS, disposeISS, setISSVisible, issGroup, issRing })
     globe.rotation.order  = 'XZY'
     globe.rotation.y      = initialY
     cityGroup.visible     = showCities
@@ -282,11 +284,17 @@ const EarthGlobe = forwardRef(function EarthGlobe(
       if (st.pingMat)   st.pingMat.uniforms.uTime.value   = t
       for (const m of st.buildingMats) m.uniforms.uTime.value = t
 
-      // Bloom pass: hide buildings so they don't contribute to the bloom RT.
+      // Bloom pass: hide buildings and ISS so they don't contribute to the bloom RT.
       const cityWasVisible = st.cityGroup?.visible ?? false
+      const issWasVisible  = st.issGroup?.visible  ?? false
+      const ringWasVisible = st.issRing?.visible   ?? false
       if (st.cityGroup) st.cityGroup.visible = false
+      if (st.issGroup)  st.issGroup.visible  = false
+      if (st.issRing)   st.issRing.visible   = false
       bloomComposer.render()
       if (st.cityGroup) st.cityGroup.visible = cityWasVisible
+      if (st.issGroup)  st.issGroup.visible  = issWasVisible
+      if (st.issRing)   st.issRing.visible   = ringWasVisible
       finalComposer.render()
 
       // Update city label positions and typing animation (after render so matrixWorld is fresh).

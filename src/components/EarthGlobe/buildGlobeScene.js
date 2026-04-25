@@ -123,7 +123,7 @@ export function buildGlobeScene(locations, w, h) {
   })
 
   // Real-time ISS tracker — 3D model + orbit trace + sub-satellite ring.
-  const { updateISS, disposeISS, setISSVisible } = buildISSTracker(globe, RADIUS)
+  const { updateISS, disposeISS, setISSVisible, issGroup, issRing } = buildISSTracker(globe, RADIUS)
 
   // Starfield — giant sphere textured on its inside surface with 8k_stars.jpg.
   // Added to the scene directly (not globe group) so it rotates independently.
@@ -140,6 +140,6 @@ export function buildGlobeScene(locations, w, h) {
     lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints,
     bracketGroups, bracketMat,
     cityGroup, citySubGroups, buildingMats,
-    updateISS, disposeISS, setISSVisible,
+    updateISS, disposeISS, setISSVisible, issGroup, issRing,
   }
 }
