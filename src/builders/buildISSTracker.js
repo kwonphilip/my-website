@@ -126,6 +126,8 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
   }
 
   fetchISS()
+  // Quick second fetch to establish true orbital direction before the normal interval kicks in.
+  const initPollId = setTimeout(fetchISS, 2000)
   const pollId = setInterval(fetchISS, POLL_MS)
 
   // ── Pre-allocated scratch objects ─────────────────────────────────────────
@@ -213,6 +215,7 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
       }
     },
     disposeISS() {
+      clearTimeout(initPollId)
       clearInterval(pollId)
       tex.dispose()
       issMat.dispose()
