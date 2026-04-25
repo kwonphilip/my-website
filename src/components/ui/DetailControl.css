@@ -1,0 +1,130 @@
+.detail-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.detail-popup {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(0, 6, 18, 0.96);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.1rem 0.9rem;
+  min-width: 14rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(91, 173, 255, 0.08);
+}
+
+.detail-popup-values-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.detail-popup-value-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.detail-popup-value-num {
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: monospace;
+  color: var(--text-muted);
+  min-width: 1.6rem;
+  text-align: right;
+}
+
+.detail-popup-value-pending {
+  color: var(--accent);
+}
+
+.detail-popup-value-arrow {
+  font-size: 1rem;
+  color: var(--accent);
+  opacity: 0.8;
+  line-height: 1;
+}
+
+.detail-popup-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.detail-popup-end-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.detail-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 20px;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.detail-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.detail-slider::-moz-range-track {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.detail-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5.5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(91, 173, 255, 0.5);
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+
+.detail-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 10px rgba(91, 173, 255, 0.7);
+}
+
+.detail-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(91, 173, 255, 0.5);
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .detail-popup {
+    left: 0;
+    right: auto;
+    transform: none;
+    max-width: calc(100vw - 3rem);
+  }
+}
