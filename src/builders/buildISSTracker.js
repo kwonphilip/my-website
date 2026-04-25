@@ -57,7 +57,7 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
 
   new OBJLoader().load(issObjUrl, (obj) => {
     obj.traverse(child => { if (child.isMesh) child.material = issMat })
-    obj.scale.setScalar(ISS_SCALE)
+    obj.scale.set(ISS_SCALE, ISS_SCALE * 2, ISS_SCALE)
     issGroup.add(obj)
   })
 
