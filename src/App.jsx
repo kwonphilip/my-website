@@ -154,6 +154,13 @@ export default function App() {
     setMenuOpen(false)
     clearTimeout(mobileAutoRotateTimer.current)
     mobileAutoRotateTimer.current = setTimeout(() => {
+      const idx = mobileNavIdx.current
+      if (idx !== null) {
+        activeRef.current?.showCityBar(idx)
+        mobileNavIdx.current = null
+      }
+      activeRef.current?.hideBracket()
+      activeRef.current?.hideAllPings()
       activeRef.current?.resumeAutoRotate()
       setMobileZoomedLabel(null)
     }, IDLE_RETURN_MS)
@@ -232,7 +239,7 @@ export default function App() {
         <HeroSection
           typedWords={typedWords}
           active={active}
-          onSnowmanClick={() => activeRef.current?.setPoleView()}
+          onSnowmanClick={() => { clearMobileMarkers(); activeRef.current?.setPoleView() }}
         />
 
         <HudReadout
