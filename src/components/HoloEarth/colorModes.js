@@ -21,7 +21,7 @@ import nightAlt2Url from '../../assets/textures/earth_lights_2048.png'
 // Tint applied to bar sides, top caps, and wireframe edges.
 // Adjust these to change how city markers look in each mode.
 export const COLOR_MODE_BAR_COLOR = {
-  hologram:  0xffffff,
+  blue:  0xffffff,
   white:     0xaaddff,
   day:       0xaaddff,
   night:     0xffffff,
@@ -31,7 +31,7 @@ export const COLOR_MODE_BAR_COLOR = {
 // ── Ping ring color per colour mode ───────────────────────────────────────
 // Color of the expanding pulse rings shown on nav-link hover.
 export const COLOR_MODE_PING_COLOR = {
-  hologram:  0x73e0ff,
+  blue:  0x73e0ff,
   white:     0x73e0ff,
   day:       0x73e0ff,
   night:     0x73e0ff,
@@ -42,7 +42,7 @@ export const COLOR_MODE_PING_COLOR = {
 // Color of the small solid dot at the center of the ping sprite.
 // Defaults to white for a bright focal point; adjust per mode for contrast.
 export const COLOR_MODE_PING_CENTER_COLOR = {
-  hologram:  0xffffff,
+  blue:  0xffffff,
   white:     0xffffff,
   day:       0xffffff,
   night:     0xffffff,
@@ -52,7 +52,7 @@ export const COLOR_MODE_PING_CENTER_COLOR = {
 // ── Bracket color per colour mode ─────────────────────────────────────────
 // Color of the four-corner hover brackets shown on nav-link hover.
 export const COLOR_MODE_BRACKET_COLOR = {
-  hologram:  0xffffff,
+  blue:  0xffffff,
   white:     0xffffff,
   day:       0xffffff,
   night:     0xffffff,
@@ -83,7 +83,7 @@ export const COLOR_MODE_SAT = {
 // Fill sphere colour and opacity per mode.
 // The fill sphere gives the globe interior its base body colour.
 export const COLOR_MODE_FILL = {
-  hologram:  { color: 0x001a2e, opacity: 0.50 },
+  blue:  { color: 0x001a2e, opacity: 0.50 },
   white:     { color: 0x111318, opacity: 0.35 },
   day:       { color: 0x0a1e30, opacity: 0.40 },
   night:     { color: 0x000005, opacity: 0.55 },
@@ -159,7 +159,7 @@ export function recolorDots(s) {
 
   const { colorMode, imgCache } = s
 
-  if (colorMode === 'hologram') { applyGradientColors(s.mesh, s.points); return }
+  if (colorMode === 'blue') { applyGradientColors(s.mesh, s.points); return }
   if (colorMode === 'white')    { applyWhiteColors(s.mesh, s.points);    return }
 
   const url = COLOR_MODE_URLS[colorMode]

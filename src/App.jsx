@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
-import EarthGlobe from './components/EarthGlobe'
+import WireframeEarth from './components/WireframeEarth'
 import HoloEarth from './components/HoloEarth'
 import AppHeader from './components/ui/AppHeader'
 import MobileMenu from './components/ui/MobileMenu'
@@ -31,7 +31,7 @@ export default function App() {
   const [hoveredNavLink, setHoveredNavLink] = useState(null)
   const [mobileZoomedLabel, setMobileZoomedLabel] = useState(null)
   const [isHolo, setIsHolo] = useState(true)
-  const [holoMode, setHoloMode] = useState('hologram')
+  const [holoMode, setHoloMode] = useState('blue')
   const [holoReady, setHoloReady] = useState(false)
   const [showCities, setShowCities] = useState(true)
   const [showFlights, setShowFlights] = useState(true)
@@ -199,7 +199,7 @@ export default function App() {
         {/* Both globes always mounted to preserve Three.js scene state across toggles. */}
         <div className="globe-wrap" onMouseMove={handleGlobeMouseMove} onMouseLeave={handleGlobeMouseLeave}>
           <div style={{ display: isHolo ? 'none' : 'block', width: '100%', height: '100%' }}>
-            <EarthGlobe
+            <WireframeEarth
               key="globe"
               ref={globeRef}
               locations={LOCATIONS}

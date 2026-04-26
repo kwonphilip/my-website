@@ -146,14 +146,22 @@ export function buildCityBuildings(globe, cities, {
     const orientMat = new THREE.Matrix4()
     const rt        = new THREE.Vector3()
     const fwd       = new THREE.Vector3()
+    const worldZ    = new THREE.Vector3(0, 0, 1)
 
     for (let ci = 0; ci < cities.length; ci++) {
       const [lat, lon, pop] = cities[ci]
       const base = getBase(lat, lon)
 
       // Tangent frame at the surface point.
+      // At the poles, N ≈ ±worldY so Gram-Schmidt against worldY collapses to
+      // zero — fall back to worldZ as the reference axis instead.
       const N = base.clone().normalize()
-      fwd.copy(worldY).addScaledVector(N, -N.dot(worldY)).normalize()
+      const NdotY = N.dot(worldY)
+      if (Math.abs(NdotY) > 0.999) {
+        fwd.copy(worldZ)
+      } else {
+        fwd.copy(worldY).addScaledVector(N, -NdotY).normalize()
+      }
       rt.crossVectors(N, fwd).normalize()
 
       // Rotation: model +Y → world N, model +X → world rt, model +Z → world fwd.

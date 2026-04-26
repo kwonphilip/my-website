@@ -1,5 +1,5 @@
 /**
- * EarthGlobe — standard blue-tech globe.
+ * WireframeEarth — standard blue-tech globe.
  *
  * Features:
  *   • Hex-grid dot overlay on landmasses (breathing + warm blinks)
@@ -45,7 +45,7 @@ import {
 
 const { PI } = Math
 
-const EarthGlobe = forwardRef(function EarthGlobe(
+const WireframeEarth = forwardRef(function WireframeEarth(
   { locations = [], initialY = 0, showCities = true, showFlights = true, showDots = true, starsRotating = true, showISS = false, navCityIndices = [] },
   ref,
 ) {
@@ -383,4 +383,4 @@ const EarthGlobe = forwardRef(function EarthGlobe(
   )
 })
 
-export default EarthGlobe
+export default WireframeEarth

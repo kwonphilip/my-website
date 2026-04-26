@@ -21,7 +21,13 @@ export default function ControlsGuide() {
   const [open, setOpen] = useState(() => window.innerWidth > 900)
 
   useEffect(() => {
-    const onResize = () => { if (window.innerWidth <= 900) setOpen(false) }
+    let wasMobile = window.innerWidth <= 900
+    const onResize = () => {
+      const isMobile = window.innerWidth <= 900
+      if (isMobile) setOpen(false)
+      else if (wasMobile) setOpen(true)
+      wasMobile = isMobile
+    }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])

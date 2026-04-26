@@ -21,7 +21,7 @@ export default function MobileMenu({
       <div className="mobile-menu-controls">
         {isHolo && (
           <select className="holo-mode-select" value={holoMode} onChange={e => onHoloMode(e.target.value)}>
-            <option value="hologram">Hologram</option>
+            <option value="blue">Blue</option>
             <option value="white">White</option>
             <option value="day">Day</option>
             <option value="night">Night</option>
