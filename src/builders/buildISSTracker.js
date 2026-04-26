@@ -23,6 +23,13 @@ const { PI, sin, cos, min, abs } = Math
 // Controls how far the ISS model is from the globe surface (for visibility, not to scale).
 const ORBIT_FACTOR = 1.3
 
+// Dot-product threshold below which the ISS label is occluded by the globe.
+// For a point at orbitRadius = globeRadius * ORBIT_FACTOR, the exact tangency
+// condition (ray from camera to ISS grazes the globe surface) gives:
+//   (_ln · _lc) = -sqrt(1 - (globeRadius/orbitRadius)²) = -sqrt(1 - 1/ORBIT_FACTOR²)
+// This is independent of camera distance and exact for any zoom level.
+const OCCLUSION_DOT = -Math.sqrt(1 - 1 / (ORBIT_FACTOR * ORBIT_FACTOR))
+
 const PULSE_SWEEP_S  = 0.7            // seconds for one full rotation
 const PULSE_DELAY_S  = 3          // pause at ISS before next pulse
 const PULSE_CYCLE_S  = PULSE_SWEEP_S + PULSE_DELAY_S
@@ -364,7 +371,7 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
     // Occlusion: hide when ISS is on the back hemisphere (dot < 0 means facing away).
     _ln.copy(_lv).normalize()
     _lc.subVectors(camera.position, _lv).normalize()
-    if (_ln.dot(_lc) < 0) {
+    if (_ln.dot(_lc) < OCCLUSION_DOT) {
       issLabelEl.style.opacity = '0'
       return
     }
