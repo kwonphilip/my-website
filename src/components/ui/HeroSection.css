@@ -93,17 +93,18 @@
   padding: 0;
   cursor: pointer;
   font-family: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--accent-dim);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  color: var(--text);
   text-align: left;
-  transition: color 0.15s ease, text-shadow 0.15s ease;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
 }
 
 .hero-detail-link:hover {
   color: var(--accent);
-  text-shadow: 0 0 10px rgba(91, 173, 255, 0.6);
 }
 
 /* ── ControlsGuide styles ── */

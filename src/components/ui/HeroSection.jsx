@@ -81,7 +81,7 @@ export default function HeroSection({ typedWords, active, onSnowmanClick }) {
             </span>
             {active === 'Contact' && (
               <button className="hero-detail-link" onClick={onSnowmanClick}>
-                → Visit the Workshop
+                Visit the Workshop →
               </button>
             )}
           </>
