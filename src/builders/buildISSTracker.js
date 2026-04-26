@@ -81,7 +81,7 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
       varying float vDist;
       void main() {
         vUv   = uv;
-        vDist = length(position - uCenter) / uRadius;
+        vDist = abs(position.z - uCenter.z) / uRadius;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
@@ -92,10 +92,11 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
       varying float vDist;
       void main() {
         vec4  texColor = texture2D(uMap, vUv);
-        float phase    = mod(uTime * 0.55, 2.2);
-        float wave     = exp(-(vDist - phase) * (vDist - phase) * 10.0);
+        float phase    = mod(uTime * 0.7, 1.8);
+        float d        = abs(vDist - phase);
+        float wave     = 1.0 - smoothstep(0.01, 0.4, d);
         vec3  ripple   = vec3(0.5, 0.88, 1.0);
-        gl_FragColor   = vec4(texColor.rgb + ripple * wave * 0.9, texColor.a);
+        gl_FragColor   = vec4(texColor.rgb + ripple * wave * 8.0, texColor.a);
       }
     `,
     side: THREE.DoubleSide,
@@ -105,7 +106,7 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
   new OBJLoader().load(issObjUrl, (obj) => {
     const box = new THREE.Box3().setFromObject(obj)
     issUniforms.uCenter.value.copy(box.getCenter(new THREE.Vector3()))
-    issUniforms.uRadius.value = box.getSize(new THREE.Vector3()).length() * 0.5
+    issUniforms.uRadius.value = (box.max.z - box.min.z) * 0.5
     obj.traverse(child => { if (child.isMesh) child.material = issMat })
     obj.scale.set(ISS_SCALE, ISS_SCALE * 2, ISS_SCALE)
     issGroup.add(obj)

@@ -89,5 +89,5 @@ export const CITIES = [
   [-36.8,  174.7,   1.7, 'Auckland'],
 
   // ── North Pole ───────────────────────────────────────────────────────────────
-  [ 90.0,    0.0,   0.0, 'North Pole\n(Santa\'s Workshop)'],
+  [ 90.0,    0.0,   0.0, 'Santa\'s Workshop\nNorth Pole'],
 ]
