@@ -18,7 +18,7 @@ import issObjUrl from '../assets/models/iss/InternationalSpaceStation.obj?url'
 import issTexUrl from '../assets/models/iss/InternationalSpaceStation_BaseColor.png?url'
 import { latLonToVec3 } from '../utils/geo.js'
 
-const { PI, sin, cos, min } = Math
+const { PI, sin, cos, min, abs } = Math
 
 // Controls how far the ISS model is from the globe surface (for visibility, not to scale).
 const ORBIT_FACTOR = 1.3
@@ -48,7 +48,7 @@ function eastwardAt(lonDeg) {
   return new THREE.Vector3(cos(λ), 0, -sin(λ))
 }
 
-export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) {
+export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, container = null } = {}) {
   const orbitRadius = globeRadius * ORBIT_FACTOR
 
   // ── 3D ISS model ──────────────────────────────────────────────────────────
@@ -68,26 +68,43 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
     issGroup.add(obj)
   })
 
-  // "ISS" sprite label — always faces the camera, floats above the model.
-  // issGroup local +Y = outward from globe (set in updateISS), so y=0.05 floats
-  // the label radially above the model.
-  const labelCanvas = document.createElement('canvas')
-  labelCanvas.width = 128; labelCanvas.height = 40
-  const lctx = labelCanvas.getContext('2d')
-  lctx.clearRect(0, 0, 128, 40)
-  lctx.fillStyle = '#88ccff'
-  lctx.font = 'bold 22px "Courier New", monospace'
-  lctx.textAlign = 'center'
-  lctx.fillText('ISS', 64, 28)
-  const labelTex = new THREE.CanvasTexture(labelCanvas)
-  const labelMat = new THREE.SpriteMaterial({
-    map: labelTex, transparent: true, toneMapped: false,
-    blending: THREE.AdditiveBlending,
-  })
-  const label = new THREE.Sprite(labelMat)
-  label.position.set(0, 0.06, 0)
-  label.scale.set(0.08, 0.025, 1)
-  issGroup.add(label)
+  // DOM label — same visual style as city labels (box + name + coords + tick).
+  // Created only if a container element is provided.
+  let issLabelEl = null, issNameEl = null, issCoordEl = null
+
+  if (container) {
+    issLabelEl = document.createElement('div')
+    issLabelEl.style.cssText =
+      'position:absolute;pointer-events:none;' +
+      'transform:translate(-50%,calc(-100% - 22px));' +
+      'padding:4px 9px 5px 9px;' +
+      'background:rgba(0,12,30,0.82);' +
+      'border:1px solid rgba(255,255,255,0.55);' +
+      'border-radius:2px;white-space:nowrap;opacity:0;' +
+      'will-change:transform,opacity;'
+
+    issNameEl = document.createElement('div')
+    issNameEl.style.cssText =
+      'font-family:monospace;font-size:0.62rem;letter-spacing:0.14em;' +
+      'text-transform:uppercase;color:rgba(255,255,255,0.95);font-weight:700;'
+    issNameEl.textContent = 'ISS'
+
+    issCoordEl = document.createElement('div')
+    issCoordEl.style.cssText =
+      'font-family:monospace;font-size:0.54rem;letter-spacing:0.07em;' +
+      'color:rgba(220,240,255,0.92);margin-top:2px;'
+
+    const tick = document.createElement('div')
+    tick.style.cssText =
+      'position:absolute;bottom:-24px;left:50%;' +
+      'transform:translateX(-50%);width:1px;height:24px;' +
+      'background:rgba(255,255,255,0.9);'
+
+    issLabelEl.appendChild(issNameEl)
+    issLabelEl.appendChild(issCoordEl)
+    issLabelEl.appendChild(tick)
+    container.appendChild(issLabelEl)
+  }
 
   // ── Sub-satellite ring on globe surface ───────────────────────────────────
   const ringGeo = new THREE.RingGeometry(globeRadius * 0.035, globeRadius * 0.050, 64)
@@ -198,9 +215,11 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
   globe.add(trailLine)
 
   // ── Position state ────────────────────────────────────────────────────────
-  let posA    = null   // older snapshot
-  let posB    = null   // most recent snapshot
-  let enabled = true   // toggled by setISSVisible
+  let posA       = null   // older snapshot
+  let posB       = null   // most recent snapshot
+  let enabled    = true   // toggled by setISSVisible
+  let _curLat    = 0
+  let _curLon    = 0
 
   async function fetchISS() {
     try {
@@ -245,6 +264,8 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
     _pB.copy(latLonToVec3(lat, lon, orbitRadius))
     issGroup.position.copy(_pB)
     issGroup.visible = true
+    _curLat = lat
+    _curLon = lon
 
     // Radial outward direction at current position.
     _out.copy(_pB).normalize()
@@ -312,8 +333,56 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
     trailLine.visible = true
   }
 
+  // ── DOM label projection ──────────────────────────────────────────────────
+  const _lv = new THREE.Vector3()
+  const _ln = new THREE.Vector3()
+  const _lc = new THREE.Vector3()
+
+  function formatCoords(lat, lon) {
+    const la = `${abs(lat).toFixed(1)}°${lat >= 0 ? 'N' : 'S'}`
+    const lo = `${abs(lon).toFixed(1)}°${lon >= 0 ? 'E' : 'W'}`
+    return `${la}  ${lo}`
+  }
+
+  function updateISSLabel(globe, camera, domEl) {
+    if (!issLabelEl || !posB) return
+    if (!enabled || !issGroup.visible) {
+      issLabelEl.style.opacity = '0'
+      return
+    }
+    const rect = domEl.getBoundingClientRect()
+    const W = rect.width, H = rect.height
+    if (!W || !H) return
+
+    globe.updateWorldMatrix(true, false)
+
+    _lv.copy(latLonToVec3(_curLat, shiftLon(_curLon), orbitRadius))
+    _lv.applyMatrix4(globe.matrixWorld)
+
+    _ln.copy(_lv).normalize()
+    _lc.subVectors(camera.position, _lv).normalize()
+    const isOccluded = _ln.dot(_lc) < 0.12
+
+    _lv.project(camera)
+    const sx = (_lv.x *  0.5 + 0.5) * W
+    const sy = (1 - (_lv.y * 0.5 + 0.5)) * H
+
+    issLabelEl.style.left = `${sx}px`
+    issLabelEl.style.top  = `${sy}px`
+
+    if (isOccluded || _lv.z > 1) {
+      issLabelEl.style.opacity = '0'
+      return
+    }
+
+    issNameEl.textContent  = 'ISS'
+    issCoordEl.textContent = formatCoords(_curLat, _curLon)
+    issLabelEl.style.opacity = '1'
+  }
+
   return {
     updateISS,
+    updateISSLabel,
     issGroup,
     issRing: ring,
     setISSVisible(v) {
@@ -323,6 +392,7 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
         ring.visible      = false
         orbitLine.visible = false
         trailLine.visible = false
+        if (issLabelEl) issLabelEl.style.opacity = '0'
       }
     },
     disposeISS() {
@@ -330,14 +400,13 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
       clearInterval(pollId)
       tex.dispose()
       issMat.dispose()
-      labelTex.dispose()
-      labelMat.dispose()
       ringMat.dispose()
       ringGeo.dispose()
       orbitGeo.dispose()
       orbitMat.dispose()
       trailGeo.dispose()
       trailMat.dispose()
+      issLabelEl?.parentNode?.removeChild(issLabelEl)
     },
   }
 }

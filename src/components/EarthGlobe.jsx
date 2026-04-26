@@ -80,6 +80,7 @@ const EarthGlobe = forwardRef(function EarthGlobe(
     citySubGroups:   [],
     navCityIndices:  navCityIndices,
     updateISS:       null,
+    updateISSLabel:  null,
     disposeISS:      null,
     setISSVisible:   null,
     issGroup:        null,
@@ -233,10 +234,10 @@ const EarthGlobe = forwardRef(function EarthGlobe(
     finalComposer.addPass(new RenderPass(scene, camera))
     finalComposer.addPass(finalPass)
 
-    const { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats, updateISS, disposeISS, setISSVisible, issGroup, issRing } = buildGlobeScene(locations, w, h)
+    const { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats, updateISS, updateISSLabel, disposeISS, setISSVisible, issGroup, issRing } = buildGlobeScene(locations, w, h, labelsRef.current)
     scene.add(starSphere)
     scene.add(globe)
-    Object.assign(s, { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats, updateISS, disposeISS, setISSVisible, issGroup, issRing })
+    Object.assign(s, { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats, updateISS, updateISSLabel, disposeISS, setISSVisible, issGroup, issRing })
     globe.rotation.order  = 'XZY'
     globe.rotation.y      = initialY
     cityGroup.visible     = showCities
@@ -299,6 +300,7 @@ const EarthGlobe = forwardRef(function EarthGlobe(
 
       // Update city label positions and typing animation (after render so matrixWorld is fresh).
       if (st.cityLabelSystem) st.cityLabelSystem.update(t, globe, camera, renderer.domElement)
+      if (st.updateISSLabel)  st.updateISSLabel(globe, camera, renderer.domElement)
     }
     animate()
     s.cancelAnim = () => cancelAnimationFrame(rafId)

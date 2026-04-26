@@ -40,8 +40,9 @@ import starsUrl                  from '../../assets/textures/8k_stars.jpg'
  * @param {{ lat: number, lon: number }[]} locations  Nav-link ping/bracket positions.
  * @param {number} w  Canvas width in pixels (for LineMaterial resolution).
  * @param {number} h  Canvas height in pixels.
+ * @param {HTMLElement|null} [labelContainer]  Overlay div for DOM labels (city + ISS).
  */
-export function buildGlobeScene(locations, w, h) {
+export function buildGlobeScene(locations, w, h, labelContainer = null) {
   const globe = new THREE.Group()
 
   // Faint dark fill sphere — provides globe body and depth.
@@ -122,8 +123,8 @@ export function buildGlobeScene(locations, w, h) {
     planeColor:  0x999999,           // dimmed — global UnrealBloomPass amplifies brightness
   })
 
-  // Real-time ISS tracker — 3D model + orbit trace + sub-satellite ring.
-  const { updateISS, disposeISS, setISSVisible, issGroup, issRing } = buildISSTracker(globe, RADIUS)
+  // Real-time ISS tracker — 3D model + orbit trace + sub-satellite ring + DOM label.
+  const { updateISS, updateISSLabel, disposeISS, setISSVisible, issGroup, issRing } = buildISSTracker(globe, RADIUS, { container: labelContainer })
 
   // Starfield — giant sphere textured on its inside surface with 8k_stars.jpg.
   // Added to the scene directly (not globe group) so it rotates independently.
@@ -140,6 +141,6 @@ export function buildGlobeScene(locations, w, h) {
     lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints,
     bracketGroups, bracketMat,
     cityGroup, citySubGroups, buildingMats,
-    updateISS, disposeISS, setISSVisible, issGroup, issRing,
+    updateISS, updateISSLabel, disposeISS, setISSVisible, issGroup, issRing,
   }
 }
