@@ -229,7 +229,11 @@ export default function App() {
           </div>
         </div>
 
-        <HeroSection typedWords={typedWords} active={active} />
+        <HeroSection
+          typedWords={typedWords}
+          active={active}
+          onSnowmanClick={() => activeRef.current?.setPoleView()}
+        />
 
         <HudReadout
           currentZoom={currentZoom} isHolo={isHolo}

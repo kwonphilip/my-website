@@ -90,6 +90,7 @@ const HoloEarth = forwardRef(function HoloEarth(
     targetX:        0,
     targetY:        initialY + PI,
     targetZoom:     ZOOM_DEFAULT,
+    targetCameraY:  0,
     cancelAnim:     null,
     mesh:           null,
     points:         null,
@@ -130,6 +131,7 @@ const HoloEarth = forwardRef(function HoloEarth(
       if (!s.globe) return
       s.autoRotate = false
       s.targetZoom = ZOOM_IN / s.zoomScale
+      s.targetCameraY = 0
       const curY = ((s.globe.rotation.y % (2*PI)) + 2*PI) % (2*PI)
       let   tgtY = ((-lon * PI / 180)             % (2*PI) + 2*PI) % (2*PI)
       let   diff = tgtY - curY
@@ -139,11 +141,23 @@ const HoloEarth = forwardRef(function HoloEarth(
       s.targetY = curY + diff
       s.targetX = lat * PI / 180
     },
+    setPoleView() {
+      const s = stateRef.current
+      if (!s.globe) return
+      s.autoRotate = false
+      s.targetZoom = 0.28 / s.zoomScale
+      s.targetCameraY = 0.9
+      s.targetX = 0
+      const curY = ((s.globe.rotation.y % (2*PI)) + 2*PI) % (2*PI)
+      s.globe.rotation.y = curY
+      s.targetY = curY
+    },
     resumeAutoRotate() {
       const s = stateRef.current
       if (s.globe) s.autoY = s.globe.rotation.y
       s.autoRotate = true
       s.targetZoom = ZOOM_DEFAULT / s.zoomScale
+      s.targetCameraY = 0
     },
     // Strip the internal +π offset before returning — external callers use standard coords.
     getRotationY()  { return (stateRef.current.globe?.rotation.y ?? PI) - PI },
@@ -405,7 +419,9 @@ const HoloEarth = forwardRef(function HoloEarth(
         globe.rotation.z += (0 - globe.rotation.z) * 0.04
       }
 
-      camera.position.z += (st.targetZoom - camera.position.z) * 0.06
+      camera.position.z += (st.targetZoom    - camera.position.z) * 0.06
+      camera.position.y += (st.targetCameraY - camera.position.y) * 0.04
+      camera.lookAt(0, camera.position.y, 0)
 
       // Slowly rotate the starfield sphere.
       if (st.starSphere && st.starsRotating) st.starSphere.rotation.y += 0.0002
