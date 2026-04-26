@@ -285,7 +285,7 @@ const HoloEarth = forwardRef(function HoloEarth(
     const fillMat = new THREE.MeshBasicMaterial({
       color: 0x001a2e, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.FrontSide,
     })
-    globe.add(new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), fillMat))
+    globe.add(new THREE.Mesh(new THREE.SphereGeometry(1.007, 32, 32), fillMat))
     s.fillMat = fillMat
 
     // Lat/lon reference grid.
