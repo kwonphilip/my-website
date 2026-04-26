@@ -285,7 +285,7 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
       varying float vT;
       void main() {
         float alpha = uOpacity * (1.0 - vT * 0.75);
-        gl_FragColor = vec4(vec3(0.5, 0.88, 1.0) * alpha * 2.5, alpha);
+        gl_FragColor = vec4(vec3(0.5, 0.88, 1.0) * alpha * 4.5, alpha);
       }
     `,
     transparent: true, depthWrite: false, side: THREE.DoubleSide,
