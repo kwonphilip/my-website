@@ -197,7 +197,7 @@ const WireframeEarth = forwardRef(function WireframeEarth(
     const scene  = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100)
     camera.position.z = ZOOM_DEFAULT
-    if (!isMobile) camera.setViewOffset(w, h, -w * 0.25, 0, w, h)
+    if (!isMobile) camera.setViewOffset(w, h, -w * 0.22, 0, w, h)
     s.camera = camera
 
     const renderer = new THREE.WebGLRenderer({ antialias: true })
@@ -333,7 +333,7 @@ const WireframeEarth = forwardRef(function WireframeEarth(
       if (w2 <= 900) {
         camera.clearViewOffset()
       } else {
-        camera.setViewOffset(w2, h2, -w2 * 0.25, 0, w2, h2)
+        camera.setViewOffset(w2, h2, -w2 * 0.22, 0, w2, h2)
       }
       camera.updateProjectionMatrix()
       renderer.setSize(w2, h2)
