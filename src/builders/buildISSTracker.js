@@ -92,10 +92,11 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
       varying float vDist;
       void main() {
         vec4  texColor = texture2D(uMap, vUv);
-        float phase    = mod(uTime * 0.7, 1.8);
-        float halfW    = 0.1;
+        float phase    = mod(uTime * 1.2, 2.5);
+        float innerW   = 1.0;
+        float outerW   = 0.01;
         float absD     = abs(vDist) - phase;
-        float wave     = smoothstep(-halfW, 0.0, absD) * (1.0 - smoothstep(0.0, halfW, absD));
+        float wave     = smoothstep(-innerW, 0.0, absD) * (1.0 - smoothstep(0.0, outerW, absD));
         vec3  ripple   = vec3(0.5, 0.88, 1.0);
         gl_FragColor   = vec4(texColor.rgb + ripple * wave * 8.0, texColor.a);
       }
