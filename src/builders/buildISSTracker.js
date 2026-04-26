@@ -178,6 +178,124 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
   orbitLine.renderOrder = 999  // always render on top
   globe.add(orbitLine)
 
+  // ── Scanline fill — radar-sweep arc inside the sub-satellite ring ───────────
+  const scanGeo = new THREE.CircleGeometry(globeRadius * 0.048, 64)
+  const scanUniforms = {
+    uAngle:   { value: 0 },
+    uArc:     { value: PI * 0.65 },
+    uOpacity: { value: 0.5 },
+    uRMax:    { value: globeRadius * 0.048 },
+  }
+  const scanMat = new THREE.ShaderMaterial({
+    uniforms: scanUniforms,
+    vertexShader: /* glsl */`
+      varying vec2 vPos;
+      void main() {
+        vPos = position.xy;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */`
+      uniform float uAngle;
+      uniform float uArc;
+      uniform float uOpacity;
+      uniform float uRMax;
+      varying vec2 vPos;
+      void main() {
+        float angle  = atan(vPos.y, vPos.x);
+        float radius = length(vPos);
+        float delta  = mod(uAngle - angle + 9.42478, 6.28318);
+        if (delta > uArc) discard;
+        float trail = 1.0 - delta / uArc;
+        float edge  = smoothstep(0.0, 0.04, 1.0 - radius / uRMax);
+        float alpha = trail * trail * edge * uOpacity;
+        if (alpha < 0.005) discard;
+        gl_FragColor = vec4(vec3(0.5, 0.88, 1.0) * alpha * 2.5, alpha);
+      }
+    `,
+    transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending, toneMapped: false,
+  })
+  const scanMesh = new THREE.Mesh(scanGeo, scanMat)
+  scanMesh.visible = false
+  globe.add(scanMesh)
+
+  // ── Signal beam — tapered cone from ISS down to sub-satellite point ─────────
+  // (BEAM_SEGS+1) rings × BEAM_SIDES verts; narrow at ISS, flared at surface.
+  const BEAM_SEGS  = 24
+  const BEAM_SIDES = 20
+  const nBeamVerts = (BEAM_SEGS + 1) * BEAM_SIDES
+  const beamSegBuf  = new Float32Array(nBeamVerts)
+  const beamSideBuf = new Float32Array(nBeamVerts)
+  for (let i = 0; i <= BEAM_SEGS; i++) {
+    for (let j = 0; j < BEAM_SIDES; j++) {
+      const vi = i * BEAM_SIDES + j
+      beamSegBuf[vi]  = i
+      beamSideBuf[vi] = j
+    }
+  }
+  const beamIdx = new Uint16Array(BEAM_SEGS * BEAM_SIDES * 6)
+  let bIdx = 0
+  for (let i = 0; i < BEAM_SEGS; i++) {
+    for (let j = 0; j < BEAM_SIDES; j++) {
+      const j1 = (j + 1) % BEAM_SIDES
+      const a = i * BEAM_SIDES + j,   b = i * BEAM_SIDES + j1
+      const c = (i+1) * BEAM_SIDES + j, d = (i+1) * BEAM_SIDES + j1
+      beamIdx[bIdx++] = a; beamIdx[bIdx++] = c; beamIdx[bIdx++] = b
+      beamIdx[bIdx++] = b; beamIdx[bIdx++] = c; beamIdx[bIdx++] = d
+    }
+  }
+  const beamGeo = new THREE.BufferGeometry()
+  beamGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(nBeamVerts * 3), 3))
+  beamGeo.setAttribute('aSegIdx',  new THREE.Float32BufferAttribute(beamSegBuf,  1))
+  beamGeo.setAttribute('aSideIdx', new THREE.Float32BufferAttribute(beamSideBuf, 1))
+  beamGeo.setIndex(new THREE.BufferAttribute(beamIdx, 1))
+  const beamUniforms = {
+    uISS:     { value: new THREE.Vector3() },
+    uSurf:    { value: new THREE.Vector3() },
+    uE1:      { value: new THREE.Vector3() },
+    uE2:      { value: new THREE.Vector3() },
+    uRMin:    { value: globeRadius * 0.004 },
+    uRMax:    { value: globeRadius * 0.055 },
+    uOpacity: { value: 0.5 },
+  }
+  const beamMat = new THREE.ShaderMaterial({
+    uniforms: beamUniforms,
+    vertexShader: /* glsl */`
+      attribute float aSegIdx;
+      attribute float aSideIdx;
+      uniform vec3  uISS;
+      uniform vec3  uSurf;
+      uniform vec3  uE1;
+      uniform vec3  uE2;
+      uniform float uRMin;
+      uniform float uRMax;
+      varying float vT;
+      void main() {
+        vT          = aSegIdx / ${BEAM_SEGS}.0;
+        vec3 center = mix(uISS, uSurf, vT);
+        float r     = mix(uRMin, uRMax, vT);
+        float phi   = aSideIdx * 6.28318530 / ${BEAM_SIDES}.0;
+        vec3 pos    = center + r * (uE1 * cos(phi) + uE2 * sin(phi));
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */`
+      uniform float uOpacity;
+      varying float vT;
+      void main() {
+        float alpha = uOpacity * (1.0 - vT * 0.75);
+        gl_FragColor = vec4(vec3(0.5, 0.88, 1.0) * alpha * 2.5, alpha);
+      }
+    `,
+    transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending, toneMapped: false,
+  })
+  const beamMesh = new THREE.Mesh(beamGeo, beamMat)
+  beamMesh.visible = false
+  beamMesh.renderOrder = 998
+  globe.add(beamMesh)
+
   // ── Comet trail — tapered tube mesh ──────────────────────────────────────
   // (TRAIL_SEGS+1) rings of TUBE_SIDES verts; radius = uTubeRadius*vFade so
   // the tube is fattest at the head and tapers to a point at the tail.
@@ -343,6 +461,23 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
     ring.visible = true
     ringMat.opacity = 0.35 + 0.15 * sin(t * 2.5)
 
+    // Scanline fill: radar sweep arc co-planar with the ring.
+    scanMesh.position.copy(surfPos)
+    scanMesh.quaternion.setFromUnitVectors(_zUp, _out)
+    scanUniforms.uAngle.value = t * 1.1
+    scanMesh.visible = true
+
+    // Signal beam: tapered cone from ISS down to sub-satellite point.
+    // Axis = -_out (radially inward); perpendicular basis reuses _fwd / _rgt.
+    {
+      beamUniforms.uISS.value.copy(_pB)
+      beamUniforms.uSurf.value.copy(surfPos)
+      beamUniforms.uE1.value.copy(_fwd)
+      beamUniforms.uE2.value.copy(_rgt)
+      beamUniforms.uOpacity.value = 0.28 + 0.12 * sin(t * 2.5)
+      beamMesh.visible = true
+    }
+
     // Orbit trace: full great circle in the current orbital plane.
     // P(θ) = orbitRadius * (outward·cos θ + forward·sin θ)
     orbitLine.visible = true
@@ -435,10 +570,12 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
     setISSVisible(v) {
       enabled = v
       if (!v) {
-        issGroup.visible  = false
-        ring.visible      = false
-        orbitLine.visible = false
-        trailLine.visible = false
+        issGroup.visible       = false
+        ring.visible           = false
+        orbitLine.visible      = false
+        trailLine.visible      = false
+        scanMesh.visible       = false
+        beamMesh.visible       = false
         if (issLabelEl) issLabelEl.style.opacity = '0'
       }
     },
@@ -453,6 +590,10 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
       orbitMat.dispose()
       trailGeo.dispose()
       trailMat.dispose()
+      scanGeo.dispose()
+      scanMat.dispose()
+      beamGeo.dispose()
+      beamMat.dispose()
       issLabelEl?.parentNode?.removeChild(issLabelEl)
     },
   }
