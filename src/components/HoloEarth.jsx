@@ -107,9 +107,10 @@ const HoloEarth = forwardRef(function HoloEarth(
     navCityIndices:       navCityIndices,
     pendingHideCityNavIdx: null,
     colorMode:      colorMode,
-    updateISS:      null,
-    disposeISS:     null,
-    setISSVisible:  null,
+    updateISS:       null,
+    updateISSLabel:  null,
+    disposeISS:      null,
+    setISSVisible:   null,
     isDragging:     false,
     dragLastX:      0,
     dragLastY:      0,
@@ -288,7 +289,7 @@ const HoloEarth = forwardRef(function HoloEarth(
     s.fillMat = fillMat
 
     // Lat/lon reference grid.
-    const gridMat = new THREE.LineBasicMaterial({ color: 0x1a3d6e, transparent: true, opacity: 0.3 })
+    const gridMat = new THREE.LineBasicMaterial({ color: 0x1a3d6e, transparent: true, opacity: 0.5 })
     for (let lat = -80; lat <= 80; lat += 20) {
       const pts = []
       for (let lon = 0; lon <= 360; lon += 2) pts.push(latLonToVec3(lat, lon, 1.005))
@@ -326,9 +327,10 @@ const HoloEarth = forwardRef(function HoloEarth(
     lanesGroup.visible = showFlights
 
     // ISS tracker — uses shiftLon so positions align with HoloEarth's +π rotation.
-    const { updateISS, disposeISS, setISSVisible } = buildISSTracker(globe, 1.0, { shiftLon })
-    s.updateISS    = updateISS
-    s.disposeISS   = disposeISS
+    const { updateISS, updateISSLabel, disposeISS, setISSVisible } = buildISSTracker(globe, 1.0, { shiftLon, container: labelsRef.current })
+    s.updateISS     = updateISS
+    s.updateISSLabel = updateISSLabel
+    s.disposeISS    = disposeISS
     s.setISSVisible = setISSVisible
 
     // ── Elevation dots and city bars (async) ─────────────────────────────
@@ -429,7 +431,8 @@ const HoloEarth = forwardRef(function HoloEarth(
       renderer.autoClear = true
 
       // Update city label positions and typing animation (after render so matrixWorld is fresh).
-      if (st.cityLabelSystem) st.cityLabelSystem.update(t, globe, camera, renderer.domElement)
+      if (st.cityLabelSystem)  st.cityLabelSystem.update(t, globe, camera, renderer.domElement)
+      if (st.updateISSLabel)   st.updateISSLabel(globe, camera, renderer.domElement)
     }
     animate()
     s.cancelAnim = () => cancelAnimationFrame(rafId)

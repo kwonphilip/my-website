@@ -52,7 +52,7 @@ export function buildGlobeScene(locations, w, h, labelContainer = null) {
   ))
 
   // Dim lat/lon grid lines for geographic reference.
-  const gridMat = new THREE.LineBasicMaterial({ color: 0x1a3d6e, transparent: true, opacity: 0.45 })
+  const gridMat = new THREE.LineBasicMaterial({ color: 0x7ac8ff, transparent: true, opacity: 0.1 })
   for (let lat = -80; lat <= 80; lat += 20) {
     const pts = []
     for (let lon = 0; lon <= 360; lon += 2) pts.push(latLonToVec3(lat, lon, RADIUS))

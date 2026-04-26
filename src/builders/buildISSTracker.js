@@ -344,24 +344,30 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
     return `${la}  ${lo}`
   }
 
-  function updateISSLabel(globe, camera, domEl) {
-    if (!issLabelEl || !posB) return
-    if (!enabled || !issGroup.visible) {
+  function updateISSLabel(globeGroup, camera, domEl) {
+    if (!issLabelEl) return
+    if (!enabled || !posB) {
       issLabelEl.style.opacity = '0'
       return
     }
+
     const rect = domEl.getBoundingClientRect()
     const W = rect.width, H = rect.height
     if (!W || !H) return
 
-    globe.updateWorldMatrix(true, false)
+    globeGroup.updateWorldMatrix(true, false)
 
-    _lv.copy(latLonToVec3(_curLat, shiftLon(_curLon), orbitRadius))
-    _lv.applyMatrix4(globe.matrixWorld)
+    // World-space position of the ISS.
+    _lv.copy(latLonToVec3(_curLat, _curLon, orbitRadius))
+    _lv.applyMatrix4(globeGroup.matrixWorld)
 
+    // Occlusion: hide when ISS is on the back hemisphere (dot < 0 means facing away).
     _ln.copy(_lv).normalize()
     _lc.subVectors(camera.position, _lv).normalize()
-    const isOccluded = _ln.dot(_lc) < 0.12
+    if (_ln.dot(_lc) < 0) {
+      issLabelEl.style.opacity = '0'
+      return
+    }
 
     _lv.project(camera)
     const sx = (_lv.x *  0.5 + 0.5) * W
@@ -369,12 +375,6 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
 
     issLabelEl.style.left = `${sx}px`
     issLabelEl.style.top  = `${sy}px`
-
-    if (isOccluded || _lv.z > 1) {
-      issLabelEl.style.opacity = '0'
-      return
-    }
-
     issNameEl.textContent  = 'ISS'
     issCoordEl.textContent = formatCoords(_curLat, _curLon)
     issLabelEl.style.opacity = '1'

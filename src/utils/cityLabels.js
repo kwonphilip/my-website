@@ -132,7 +132,8 @@ function makeLabel(container) {
   const nameEl = document.createElement('div')
   nameEl.style.cssText =
     'font-family:monospace;font-size:0.62rem;letter-spacing:0.14em;' +
-    'text-transform:uppercase;color:rgba(255,255,255,0.95);font-weight:700;'
+    'text-transform:uppercase;color:rgba(255,255,255,0.95);font-weight:700;' +
+    'white-space:pre-line;'
 
   const coordEl = document.createElement('div')
   coordEl.style.cssText =
