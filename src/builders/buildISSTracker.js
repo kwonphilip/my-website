@@ -23,6 +23,13 @@ const { PI, sin, cos, min } = Math
 // Controls how far the ISS model is from the globe surface (for visibility, not to scale).
 const ORBIT_FACTOR = 1.3
 
+const PULSE_SWEEP_S  = 0.7            // seconds for one full rotation
+const PULSE_DELAY_S  = 3          // pause at ISS before next pulse
+const PULSE_CYCLE_S  = PULSE_SWEEP_S + PULSE_DELAY_S
+const TRAIL_SEGS     = 64             // rings along the trail (GPU-computed)
+const TUBE_SIDES     = 8              // vertices around the tube circumference
+const TRAIL_SPAN     = PI * (5 / 3)  // ~300° — max trail arc
+
 // World-space scale for the OBJ (model units are cm at ~1:200 scale).
 // At RADIUS=0.9, this makes the ISS clearly visible; bloomPass amplifies brightness.
 const ISS_SCALE = 0.0012
@@ -99,7 +106,7 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
   const orbitGeo = new THREE.BufferGeometry()
   orbitGeo.setAttribute('position', new THREE.Float32BufferAttribute(orbitBuf, 3))
   const orbitMat = new THREE.LineBasicMaterial({
-    color: 0x4499ff, transparent: true, opacity: 0.40,
+    color: 0xb8e0ff, transparent: true, opacity: 0.40,
     depthTest: false, depthWrite: false,
     blending: THREE.AdditiveBlending, toneMapped: false,
   })
@@ -107,6 +114,88 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
   orbitLine.visible = false
   orbitLine.renderOrder = 999  // always render on top
   globe.add(orbitLine)
+
+  // ── Comet trail — tapered tube mesh ──────────────────────────────────────
+  // (TRAIL_SEGS+1) rings of TUBE_SIDES verts; radius = uTubeRadius*vFade so
+  // the tube is fattest at the head and tapers to a point at the tail.
+  // Cross-section axes: e1 = radial outward, e2 = orbital-plane normal.
+  const nTubeVerts = (TRAIL_SEGS + 1) * TUBE_SIDES
+  const segIdxBuf  = new Float32Array(nTubeVerts)
+  const sideIdxBuf = new Float32Array(nTubeVerts)
+  for (let i = 0; i <= TRAIL_SEGS; i++) {
+    for (let j = 0; j < TUBE_SIDES; j++) {
+      const vi = i * TUBE_SIDES + j
+      segIdxBuf[vi]  = i
+      sideIdxBuf[vi] = j
+    }
+  }
+  const trailIdx = new Uint16Array(TRAIL_SEGS * TUBE_SIDES * 6)
+  let tIdx = 0
+  for (let i = 0; i < TRAIL_SEGS; i++) {
+    for (let j = 0; j < TUBE_SIDES; j++) {
+      const j1 = (j + 1) % TUBE_SIDES
+      const a = i * TUBE_SIDES + j,  b = i * TUBE_SIDES + j1
+      const c = (i+1) * TUBE_SIDES + j, d = (i+1) * TUBE_SIDES + j1
+      trailIdx[tIdx++] = a; trailIdx[tIdx++] = c; trailIdx[tIdx++] = b
+      trailIdx[tIdx++] = b; trailIdx[tIdx++] = c; trailIdx[tIdx++] = d
+    }
+  }
+  const trailGeo = new THREE.BufferGeometry()
+  trailGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(nTubeVerts * 3), 3))
+  trailGeo.setAttribute('aSegIdx',  new THREE.Float32BufferAttribute(segIdxBuf,  1))
+  trailGeo.setAttribute('aSideIdx', new THREE.Float32BufferAttribute(sideIdxBuf, 1))
+  trailGeo.setIndex(new THREE.BufferAttribute(trailIdx, 1))
+
+  const trailUniforms = {
+    uOut:         { value: new THREE.Vector3() },
+    uFwd:         { value: new THREE.Vector3() },
+    uNormal:      { value: new THREE.Vector3() },
+    uOrbitRadius: { value: orbitRadius },
+    uTubeRadius:  { value: globeRadius * 0.002 },
+    uTheta:       { value: 0 },
+    uSpan:        { value: 0 },
+  }
+  const trailMat = new THREE.ShaderMaterial({
+    uniforms: trailUniforms,
+    vertexShader: /* glsl */`
+      attribute float aSegIdx;
+      attribute float aSideIdx;
+      uniform vec3  uOut;
+      uniform vec3  uFwd;
+      uniform vec3  uNormal;
+      uniform float uOrbitRadius;
+      uniform float uTubeRadius;
+      uniform float uTheta;
+      uniform float uSpan;
+      varying float vFade;
+      void main() {
+        float t      = aSegIdx / ${TRAIL_SEGS}.0;
+        vFade        = 1.0 - t;
+        float theta  = uTheta - t * uSpan;
+        float c = cos(theta), s = sin(theta);
+        vec3 center  = uOrbitRadius * (uOut * c + uFwd * s);
+        vec3 e1      = uOut * c + uFwd * s;          // radial outward (unit)
+        vec3 e2      = uNormal;                       // orbital-plane normal (unit)
+        float phi    = aSideIdx * 6.28318530 / ${TUBE_SIDES}.0;
+        float r      = uTubeRadius * vFade;
+        vec3 pos     = center + r * (e1 * cos(phi) + e2 * sin(phi));
+        gl_Position  = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */`
+      varying float vFade;
+      void main() {
+        if (vFade < 0.01) discard;
+        gl_FragColor = vec4(vec3(0.5, 0.88, 1.0) * vFade, vFade * 0.9);
+      }
+    `,
+    transparent: true, depthWrite: false,
+    blending: THREE.AdditiveBlending, toneMapped: false,
+  })
+  const trailLine = new THREE.Mesh(trailGeo, trailMat)
+  trailLine.renderOrder = 999
+  trailLine.visible = false
+  globe.add(trailLine)
 
   // ── Position state ────────────────────────────────────────────────────────
   let posA    = null   // older snapshot
@@ -200,6 +289,27 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
       )
     }
     posAttr.needsUpdate = true
+
+    // Pulse: one full rotation in PULSE_SWEEP_S, then silent for PULSE_DELAY_S.
+    // cycleT goes 0→1 during the sweep; ≥1 means we're in the delay gap.
+    const cycleT = (t % PULSE_CYCLE_S) / PULSE_SWEEP_S
+    if (cycleT >= 1.0) {
+      trailLine.visible = false
+      return
+    }
+
+    // θ=0 in the orbit parameterization maps to _out * orbitRadius = ISS position,
+    // so the pulse always starts and ends at the ISS.
+    const θDot = cycleT * 2 * PI
+
+    // Trail grows from zero at launch, caps at TRAIL_SPAN — never wraps past origin.
+    // All math is GPU-side; just push the four uniforms.
+    trailUniforms.uOut.value.copy(_out)
+    trailUniforms.uFwd.value.copy(_fwd)
+    trailUniforms.uNormal.value.copy(_rgt)
+    trailUniforms.uTheta.value = θDot
+    trailUniforms.uSpan.value  = min(θDot, TRAIL_SPAN)
+    trailLine.visible = true
   }
 
   return {
@@ -212,6 +322,7 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
         issGroup.visible  = false
         ring.visible      = false
         orbitLine.visible = false
+        trailLine.visible = false
       }
     },
     disposeISS() {
@@ -225,6 +336,8 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x } = {}) 
       ringGeo.dispose()
       orbitGeo.dispose()
       orbitMat.dispose()
+      trailGeo.dispose()
+      trailMat.dispose()
     },
   }
 }
