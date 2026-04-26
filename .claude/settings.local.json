@@ -10,7 +10,10 @@
       "Bash(powershell -Command \"Add-Type -Assembly System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::OpenRead\\('src/assets/International Space Station.zip'\\).Entries | Select-Object FullName\")",
       "Bash(powershell -Command \"Add-Type -Assembly System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory\\('d:/Projects/Personal Website/my-website/src/assets/International Space Station.zip', 'd:/Projects/Personal Website/my-website/src/assets/models/iss'\\)\")",
       "Bash(awk '{ *)",
-      "Bash(curl -s \"https://api.wheretheiss.at/v1/satellites/25544\")"
+      "Bash(curl -s \"https://api.wheretheiss.at/v1/satellites/25544\")",
+      "Bash(awk '{print $1, $2, $3, $4}')",
+      "Bash(sort -k4 -n)",
+      "Bash(awk '{print $4}')"
     ]
   }
 }

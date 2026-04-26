@@ -148,9 +148,13 @@ const HoloEarth = forwardRef(function HoloEarth(
       s.targetZoom = 0.28 / s.zoomScale
       s.targetCameraY = 0.9
       s.targetX = 0
+      // Shortest-path rotate to Y=0 so the snowman's face (+Z) points at the camera.
       const curY = ((s.globe.rotation.y % (2*PI)) + 2*PI) % (2*PI)
+      let   diff = 0.86 * PI - curY
+      if (diff >  PI) diff -= 2*PI
+      if (diff < -PI) diff += 2*PI
       s.globe.rotation.y = curY
-      s.targetY = curY
+      s.targetY = curY + diff
     },
     resumeAutoRotate() {
       const s = stateRef.current
