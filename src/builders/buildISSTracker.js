@@ -81,7 +81,7 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
       varying float vDist;
       void main() {
         vUv   = uv;
-        vDist = abs(position.z - uCenter.z) / uRadius;
+        vDist = (position.z - uCenter.z) / uRadius;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
@@ -93,8 +93,9 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
       void main() {
         vec4  texColor = texture2D(uMap, vUv);
         float phase    = mod(uTime * 0.7, 1.8);
-        float d        = abs(vDist - phase);
-        float wave     = 1.0 - smoothstep(0.01, 0.4, d);
+        float halfW    = 0.1;
+        float absD     = abs(vDist) - phase;
+        float wave     = smoothstep(-halfW, 0.0, absD) * (1.0 - smoothstep(0.0, halfW, absD));
         vec3  ripple   = vec3(0.5, 0.88, 1.0);
         gl_FragColor   = vec4(texColor.rgb + ripple * wave * 8.0, texColor.a);
       }
