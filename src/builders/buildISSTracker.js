@@ -152,16 +152,53 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
     container.appendChild(issLabelEl)
   }
 
-  // ── Sub-satellite ring on globe surface ───────────────────────────────────
-  const ringGeo = new THREE.RingGeometry(globeRadius * 0.035, globeRadius * 0.050, 64)
-  const ringMat = new THREE.MeshBasicMaterial({
-    color: 0x44aaff, transparent: true, opacity: 0.5,
-    side: THREE.DoubleSide, depthWrite: false,
+  // ── Sub-satellite ripple ring — expands from center to beam footprint ────────
+  const RIPPLE_PERIOD = 2.0  // seconds per expansion cycle
+  const ripplePoints = []
+  for (let i = 0; i <= 64; i++) {
+    const a = (i / 64) * 2 * PI
+    ripplePoints.push(new THREE.Vector3(cos(a) * globeRadius * 0.055, sin(a) * globeRadius * 0.055, 0))
+  }
+  const rippleGeo = new THREE.BufferGeometry().setFromPoints(ripplePoints)
+  const rippleMat = new THREE.LineBasicMaterial({
+    color: 0x44aaff, transparent: true, opacity: 0.7,
+    depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+  })
+  const rippleRing = new THREE.Line(rippleGeo, rippleMat)
+  rippleRing.visible = false
+  globe.add(rippleRing)
+
+  // ── Spotlight fill — translucent radial gradient disk under the beam ─────────
+  const spotGeo = new THREE.CircleGeometry(globeRadius * 0.055, 64)
+  const spotMat = new THREE.ShaderMaterial({
+    uniforms: {
+      uRMax:    { value: globeRadius * 0.055 },
+      uOpacity: { value: 0.4 },
+    },
+    vertexShader: /* glsl */`
+      varying vec2 vPos;
+      void main() {
+        vPos = position.xy;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */`
+      uniform float uRMax;
+      uniform float uOpacity;
+      varying vec2 vPos;
+      void main() {
+        float r     = length(vPos) / uRMax;
+        float alpha = (1.0 - r * r) * uOpacity;
+        if (alpha < 0.002) discard;
+        gl_FragColor = vec4(vec3(0.5, 0.88, 1.0) * alpha * 2.0, alpha);
+      }
+    `,
+    transparent: true, depthWrite: false, side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending, toneMapped: false,
   })
-  const ring = new THREE.Mesh(ringGeo, ringMat)
-  ring.visible = false
-  globe.add(ring)
+  const spotMesh = new THREE.Mesh(spotGeo, spotMat)
+  spotMesh.visible = false
+  globe.add(spotMesh)
 
   // ── Orbit trace — great circle in the current orbital plane ───────────────
   // depthTest:false so the trace is always visible even on the far side of the globe.
@@ -177,48 +214,6 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
   orbitLine.visible = false
   orbitLine.renderOrder = 999  // always render on top
   globe.add(orbitLine)
-
-  // ── Scanline fill — radar-sweep arc inside the sub-satellite ring ───────────
-  const scanGeo = new THREE.CircleGeometry(globeRadius * 0.048, 64)
-  const scanUniforms = {
-    uAngle:   { value: 0 },
-    uArc:     { value: PI * 0.65 },
-    uOpacity: { value: 0.5 },
-    uRMax:    { value: globeRadius * 0.048 },
-  }
-  const scanMat = new THREE.ShaderMaterial({
-    uniforms: scanUniforms,
-    vertexShader: /* glsl */`
-      varying vec2 vPos;
-      void main() {
-        vPos = position.xy;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: /* glsl */`
-      uniform float uAngle;
-      uniform float uArc;
-      uniform float uOpacity;
-      uniform float uRMax;
-      varying vec2 vPos;
-      void main() {
-        float angle  = atan(vPos.y, vPos.x);
-        float radius = length(vPos);
-        float delta  = mod(uAngle - angle + 9.42478, 6.28318);
-        if (delta > uArc) discard;
-        float trail = 1.0 - delta / uArc;
-        float edge  = smoothstep(0.0, 0.04, 1.0 - radius / uRMax);
-        float alpha = trail * trail * edge * uOpacity;
-        if (alpha < 0.005) discard;
-        gl_FragColor = vec4(vec3(0.5, 0.88, 1.0) * alpha * 2.5, alpha);
-      }
-    `,
-    transparent: true, depthWrite: false, side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending, toneMapped: false,
-  })
-  const scanMesh = new THREE.Mesh(scanGeo, scanMat)
-  scanMesh.visible = false
-  globe.add(scanMesh)
 
   // ── Signal beam — tapered cone from ISS down to sub-satellite point ─────────
   // (BEAM_SEGS+1) rings × BEAM_SIDES verts; narrow at ISS, flared at surface.
@@ -454,18 +449,16 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
     _mat4.makeBasis(_fwd, _out, _rgt)
     issGroup.setRotationFromMatrix(_mat4)
 
-    // Sub-satellite ring: flat on globe surface, normal aligned with outward.
+    // Ripple ring + spotlight fill: both co-planar on the globe surface.
     const surfPos = latLonToVec3(lat, lon, globeRadius * 1.001)
-    ring.position.copy(surfPos)
-    ring.quaternion.setFromUnitVectors(_zUp, _out)
-    ring.visible = true
-    ringMat.opacity = 0.35 + 0.15 * sin(t * 2.5)
-
-    // Scanline fill: radar sweep arc co-planar with the ring.
-    scanMesh.position.copy(surfPos)
-    scanMesh.quaternion.setFromUnitVectors(_zUp, _out)
-    scanUniforms.uAngle.value = t * 1.1
-    scanMesh.visible = true
+    const rippleT = (t % RIPPLE_PERIOD) / RIPPLE_PERIOD
+    rippleRing.position.copy(surfPos)
+    rippleRing.quaternion.setFromUnitVectors(_zUp, _out)
+    rippleRing.scale.set(rippleT, rippleT, 1)
+    rippleRing.visible = true
+    spotMesh.position.copy(surfPos)
+    spotMesh.quaternion.setFromUnitVectors(_zUp, _out)
+    spotMesh.visible = true
 
     // Signal beam: tapered cone from ISS down to sub-satellite point.
     // Axis = -_out (radially inward); perpendicular basis reuses _fwd / _rgt.
@@ -566,15 +559,18 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
     updateISS,
     updateISSLabel,
     issGroup,
-    issRing: ring,
+    issRing:  rippleRing,
+    issBeam:  beamMesh,
+    issScan:  null,
+    issSpot:  spotMesh,
     setISSVisible(v) {
       enabled = v
       if (!v) {
         issGroup.visible       = false
-        ring.visible           = false
+        rippleRing.visible     = false
+        spotMesh.visible       = false
         orbitLine.visible      = false
         trailLine.visible      = false
-        scanMesh.visible       = false
         beamMesh.visible       = false
         if (issLabelEl) issLabelEl.style.opacity = '0'
       }
@@ -584,14 +580,14 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
       clearInterval(pollId)
       tex.dispose()
       issMat.dispose()
-      ringMat.dispose()
-      ringGeo.dispose()
+      rippleGeo.dispose()
+      rippleMat.dispose()
+      spotGeo.dispose()
+      spotMat.dispose()
       orbitGeo.dispose()
       orbitMat.dispose()
       trailGeo.dispose()
       trailMat.dispose()
-      scanGeo.dispose()
-      scanMat.dispose()
       beamGeo.dispose()
       beamMat.dispose()
       issLabelEl?.parentNode?.removeChild(issLabelEl)
