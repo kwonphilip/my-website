@@ -65,11 +65,47 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
 
   const tex = new THREE.TextureLoader().load(issTexUrl)
   tex.flipY = false  // OBJ/MTL textures use DirectX UV convention
-  const issMat = new THREE.MeshBasicMaterial({
-    map: tex, toneMapped: false, side: THREE.DoubleSide,
+
+  const issUniforms = {
+    uMap:    { value: tex },
+    uTime:   { value: 0 },
+    uCenter: { value: new THREE.Vector3() },
+    uRadius: { value: 1 },
+  }
+  const issMat = new THREE.ShaderMaterial({
+    uniforms: issUniforms,
+    vertexShader: /* glsl */`
+      uniform vec3  uCenter;
+      uniform float uRadius;
+      varying vec2  vUv;
+      varying float vDist;
+      void main() {
+        vUv   = uv;
+        vDist = length(position - uCenter) / uRadius;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */`
+      uniform sampler2D uMap;
+      uniform float     uTime;
+      varying vec2  vUv;
+      varying float vDist;
+      void main() {
+        vec4  texColor = texture2D(uMap, vUv);
+        float phase    = mod(uTime * 0.55, 2.2);
+        float wave     = exp(-(vDist - phase) * (vDist - phase) * 10.0);
+        vec3  ripple   = vec3(0.5, 0.88, 1.0);
+        gl_FragColor   = vec4(texColor.rgb + ripple * wave * 0.9, texColor.a);
+      }
+    `,
+    side: THREE.DoubleSide,
+    toneMapped: false,
   })
 
   new OBJLoader().load(issObjUrl, (obj) => {
+    const box = new THREE.Box3().setFromObject(obj)
+    issUniforms.uCenter.value.copy(box.getCenter(new THREE.Vector3()))
+    issUniforms.uRadius.value = box.getSize(new THREE.Vector3()).length() * 0.5
     obj.traverse(child => { if (child.isMesh) child.material = issMat })
     obj.scale.set(ISS_SCALE, ISS_SCALE * 2, ISS_SCALE)
     issGroup.add(obj)
@@ -94,7 +130,7 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
     issNameEl.style.cssText =
       'font-family:monospace;font-size:0.62rem;letter-spacing:0.14em;' +
       'text-transform:uppercase;color:rgba(255,255,255,0.95);font-weight:700;'
-    issNameEl.textContent = 'ISS'
+    issNameEl.textContent = 'Intl. Space Station'
 
     issCoordEl = document.createElement('div')
     issCoordEl.style.cssText =
@@ -256,6 +292,7 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
 
   function updateISS(t) {
     if (!posB || !enabled) return
+    issUniforms.uTime.value = t
 
     // Interpolate/extrapolate between the two most recent position snapshots.
     const alpha = min(2.0, (Date.now() - posB.ts) / POLL_MS)
@@ -382,7 +419,7 @@ export function buildISSTracker(globe, globeRadius, { shiftLon = x => x, contain
 
     issLabelEl.style.left = `${sx}px`
     issLabelEl.style.top  = `${sy}px`
-    issNameEl.textContent  = 'ISS'
+    issNameEl.textContent  = 'Intl. Space Station'
     issCoordEl.textContent = formatCoords(_curLat, _curLon)
     issLabelEl.style.opacity = '1'
   }
