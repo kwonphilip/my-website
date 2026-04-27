@@ -23,11 +23,16 @@ import * as THREE from 'three'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js'
 import { BUILDING_VERT, BUILDING_FRAG } from '../shaders/buildingShaders.js'
 
-import s1Url from '../assets/models/buildings/skyscraper1.obj?url' // Skyscraper by Jarlan Perez [CC-BY] via Poly Pizza
-import s2Url from '../assets/models/buildings/skyscraper2.obj?url' // Low Building by Kenney (CC0)
-import s3Url from '../assets/models/buildings/skyscraper3.obj?url' // Skyscraper by Kenney (CC0)
+import s1Url      from '../assets/models/buildings/skyscraper1.obj?url' // Skyscraper by Jarlan Perez [CC-BY] via Poly Pizza
+import s2Url      from '../assets/models/buildings/skyscraper2.obj?url' // Low Building by Kenney (CC0)
+import s3Url      from '../assets/models/buildings/skyscraper3.obj?url' // Skyscraper by Kenney (CC0)
+import snowmanUrl from '../assets/models/snowman/model.obj?url'
 
 const getTier = pop => pop >= 15 ? 0 : pop >= 6 ? 1 : 2
+
+// Snowman model dims: Y span 1.209, Y-min −0.585 → yFloor = 0.585.
+const SNOWMAN_SCALE  = 0.02   // height ≈ 0.046 globe units
+const SNOWMAN_YFLOOR = 0.585   // lifts model base flush with the globe surface
 
 // ── Scale / placement config per tier ────────────────────────────────────
 //
@@ -132,10 +137,13 @@ export function buildCityBuildings(globe, cities, {
   })
 
   const buildingMats = [makeGradientMat(0.40 * opacityScale), makeGradientMat(0.60 * opacityScale), makeGradientMat(0.72 * opacityScale)]
+  const snowmanMat   = makeGradientMat(0.55 * opacityScale)
+  buildingMats.push(snowmanMat) // index 3 — picked up by uTime and color-mode loops
   const worldY = new THREE.Vector3(0, 1, 0)
 
-  // Load all three templates in parallel, then populate city sub-groups.
-  Promise.all([loadOBJ(s1Url), loadOBJ(s2Url), loadOBJ(s3Url)]).then(templates => {
+  // Load all templates in parallel, then populate city sub-groups.
+  Promise.all([loadOBJ(s1Url), loadOBJ(s2Url), loadOBJ(s3Url), loadOBJ(snowmanUrl)]).then(([s1, s2, s3, snowman]) => {
+    const templates = [s1, s2, s3]
     for (let ti = 0; ti < templates.length; ti++) {
       const box = new THREE.Box3().setFromObject(templates[ti])
       buildingMats[ti].uniforms.uYMin.value = box.min.y
@@ -143,46 +151,76 @@ export function buildCityBuildings(globe, cities, {
       templates[ti].traverse(child => { if (child.isMesh) child.material = buildingMats[ti] })
     }
 
+    const snowBox = new THREE.Box3().setFromObject(snowman)
+    snowmanMat.uniforms.uYMin.value = snowBox.min.y
+    snowmanMat.uniforms.uYMax.value = snowBox.max.y
+    snowman.traverse(child => { if (child.isMesh) child.material = snowmanMat })
+
     const orientMat = new THREE.Matrix4()
     const rt        = new THREE.Vector3()
     const fwd       = new THREE.Vector3()
+    const worldZ    = new THREE.Vector3(0, 0, 1)
 
     for (let ci = 0; ci < cities.length; ci++) {
       const [lat, lon, pop] = cities[ci]
       const base = getBase(lat, lon)
 
       // Tangent frame at the surface point.
+      // At the poles, N ≈ ±worldY so Gram-Schmidt against worldY collapses to
+      // zero — fall back to worldZ as the reference axis instead.
       const N = base.clone().normalize()
-      fwd.copy(worldY).addScaledVector(N, -N.dot(worldY)).normalize()
+      const NdotY = N.dot(worldY)
+      if (Math.abs(NdotY) > 0.999) {
+        fwd.copy(worldZ)
+      } else {
+        fwd.copy(worldY).addScaledVector(N, -NdotY).normalize()
+      }
       rt.crossVectors(N, fwd).normalize()
 
       // Rotation: model +Y → world N, model +X → world rt, model +Z → world fwd.
       orientMat.makeBasis(rt, N, fwd)
 
-      const tier   = getTier(pop)
-      const layout = TIER_LAYOUT[tier]
-      const sub    = citySubGroups[ci]
+      const sub = citySubGroups[ci]
 
-      const phaseOffset = (ci * 1.4) / cities.length
-
-      for (const { m, scale, scaleXZ, yFloor, rt: rOff, fwd: fOff } of layout) {
-        const mesh = templates[m].clone()
+      if (lat >= 89.9) {
+        // North Pole — snowman replaces skyscrapers
+        const mesh = snowman.clone()
         mesh.traverse(child => {
           if (child.isMesh) {
             child.geometry = child.geometry.clone()
             const count = child.geometry.attributes.position.count
-            child.geometry.setAttribute('aPhaseOffset', new THREE.BufferAttribute(new Float32Array(count).fill(phaseOffset), 1))
+            child.geometry.setAttribute('aPhaseOffset', new THREE.BufferAttribute(new Float32Array(count).fill(0), 1))
             child.add(new THREE.LineSegments(new THREE.EdgesGeometry(child.geometry, 15), wireMat))
           }
         })
-        mesh.scale.set(scaleXZ, scale, scaleXZ)
-        mesh.position
-          .copy(base)
-          .addScaledVector(rt, rOff)
-          .addScaledVector(fwd, fOff)
-          .addScaledVector(N, yFloor * scale)
+        mesh.scale.setScalar(SNOWMAN_SCALE)
+        mesh.position.copy(base).addScaledVector(N, SNOWMAN_YFLOOR * SNOWMAN_SCALE)
         mesh.setRotationFromMatrix(orientMat)
         sub.add(mesh)
+      } else {
+        const tier        = getTier(pop)
+        const layout      = TIER_LAYOUT[tier]
+        const phaseOffset = (ci * 1.4) / cities.length
+
+        for (const { m, scale, scaleXZ, yFloor, rt: rOff, fwd: fOff } of layout) {
+          const mesh = templates[m].clone()
+          mesh.traverse(child => {
+            if (child.isMesh) {
+              child.geometry = child.geometry.clone()
+              const count = child.geometry.attributes.position.count
+              child.geometry.setAttribute('aPhaseOffset', new THREE.BufferAttribute(new Float32Array(count).fill(phaseOffset), 1))
+              child.add(new THREE.LineSegments(new THREE.EdgesGeometry(child.geometry, 15), wireMat))
+            }
+          })
+          mesh.scale.set(scaleXZ, scale, scaleXZ)
+          mesh.position
+            .copy(base)
+            .addScaledVector(rt, rOff)
+            .addScaledVector(fwd, fOff)
+            .addScaledVector(N, yFloor * scale)
+          mesh.setRotationFromMatrix(orientMat)
+          sub.add(mesh)
+        }
       }
     }
   })

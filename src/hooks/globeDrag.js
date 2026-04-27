@@ -67,9 +67,10 @@ export function setupGlobeDrag(canvas, stateRef, camera, { zoomDefault, idleRetu
     clearTimeout(idleTimer)
     idleTimer = setTimeout(() => {
       if (!s.globe) return
-      s.autoY      = s.globe.rotation.y
-      s.autoRotate = true
-      s.targetZoom = zoomDefault / s.zoomScale
+      s.autoY         = s.globe.rotation.y
+      s.autoRotate    = true
+      s.targetZoom    = zoomDefault / s.zoomScale
+      s.targetCameraY = 0
     }, idleReturnMs)
   }
 

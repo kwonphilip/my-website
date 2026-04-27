@@ -4,7 +4,7 @@ import { NAV_LINKS } from '../../data/navConfig.js'
 import ControlsGuide from './ControlsGuide'
 import './HeroSection.css'
 
-export default function HeroSection({ typedWords, active }) {
+export default function HeroSection({ typedWords, active, onSnowmanClick }) {
   const [typedLabel, setTypedLabel] = useState('')
   const [localWords, setLocalWords] = useState(null) // null = use prop typedWords
   const prevActiveRef = useRef(null)
@@ -79,6 +79,11 @@ export default function HeroSection({ typedWords, active }) {
             <span className="hero-detail-desc">
               {NAV_LINKS.find(l => l.label === active)?.desc}
             </span>
+            {active === 'Contact' && (
+              <button className="hero-detail-link" onClick={onSnowmanClick}>
+                Visit the Workshop →
+              </button>
+            )}
           </>
         ) : (
           <ControlsGuide />

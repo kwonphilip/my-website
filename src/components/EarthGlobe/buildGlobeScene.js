@@ -30,6 +30,7 @@ import { DOTS_VERT, DOTS_FRAG }  from '../../shaders/dotShaders.js'
 import { buildShippingLanes }    from '../../builders/buildShippingLanes.js'
 import { buildCityBuildings }    from '../../builders/buildCityBuildings.js'
 import { buildPingsAndBrackets } from '../../builders/buildPingsAndBrackets.js'
+import { buildISSTracker }       from '../../builders/buildISSTracker.js'
 import { CITIES }                from '../../data/cities.js'
 import { ROUTES }                from '../../data/routes.js'
 import { RADIUS, DOT_SPHERE_SEGMENTS, PLANE_ORBIT_RADIUS } from './constants.js'
@@ -39,8 +40,9 @@ import starsUrl                  from '../../assets/textures/8k_stars.jpg'
  * @param {{ lat: number, lon: number }[]} locations  Nav-link ping/bracket positions.
  * @param {number} w  Canvas width in pixels (for LineMaterial resolution).
  * @param {number} h  Canvas height in pixels.
+ * @param {HTMLElement|null} [labelContainer]  Overlay div for DOM labels (city + ISS).
  */
-export function buildGlobeScene(locations, w, h) {
+export function buildGlobeScene(locations, w, h, labelContainer = null) {
   const globe = new THREE.Group()
 
   // Faint dark fill sphere — provides globe body and depth.
@@ -50,7 +52,7 @@ export function buildGlobeScene(locations, w, h) {
   ))
 
   // Dim lat/lon grid lines for geographic reference.
-  const gridMat = new THREE.LineBasicMaterial({ color: 0x1a3d6e, transparent: true, opacity: 0.45 })
+  const gridMat = new THREE.LineBasicMaterial({ color: 0x7ac8ff, transparent: true, opacity: 0.1 })
   for (let lat = -80; lat <= 80; lat += 20) {
     const pts = []
     for (let lon = 0; lon <= 360; lon += 2) pts.push(latLonToVec3(lat, lon, RADIUS))
@@ -121,6 +123,9 @@ export function buildGlobeScene(locations, w, h) {
     planeColor:  0x999999,           // dimmed — global UnrealBloomPass amplifies brightness
   })
 
+  // Real-time ISS tracker — 3D model + orbit trace + sub-satellite ring + DOM label.
+  const { updateISS, updateISSLabel, disposeISS, setISSVisible, issGroup, issRing, issBeam, issScan, issSpot } = buildISSTracker(globe, RADIUS, { container: labelContainer })
+
   // Starfield — giant sphere textured on its inside surface with 8k_stars.jpg.
   // Added to the scene directly (not globe group) so it rotates independently.
   const starsTex    = new THREE.TextureLoader().load(starsUrl)
@@ -136,5 +141,6 @@ export function buildGlobeScene(locations, w, h) {
     lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints,
     bracketGroups, bracketMat,
     cityGroup, citySubGroups, buildingMats,
+    updateISS, updateISSLabel, disposeISS, setISSVisible, issGroup, issRing, issBeam, issScan, issSpot,
   }
 }

@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
-import EarthGlobe from './components/EarthGlobe'
+import WireframeEarth from './components/WireframeEarth'
 import HoloEarth from './components/HoloEarth'
 import AppHeader from './components/ui/AppHeader'
 import MobileMenu from './components/ui/MobileMenu'
@@ -24,19 +24,20 @@ export default function App() {
   const lastAppliedZoomRef = useRef(100)
   const mousePosRef = useRef(null)
   const mouseOnGlobeRef = useRef(false)
-  const isHoloRef = useRef(false)
+  const isHoloRef = useRef(true)
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [active, setActive] = useState(null)
   const [hoveredNavLink, setHoveredNavLink] = useState(null)
   const [mobileZoomedLabel, setMobileZoomedLabel] = useState(null)
-  const [isHolo, setIsHolo] = useState(false)
-  const [holoMode, setHoloMode] = useState('hologram')
+  const [isHolo, setIsHolo] = useState(true)
+  const [holoMode, setHoloMode] = useState('blue')
   const [holoReady, setHoloReady] = useState(false)
-  const [showCities, setShowCities] = useState(false)
-  const [showFlights, setShowFlights] = useState(false)
-  const [showDots, setShowDots] = useState(false)
-  const [starsRotating, setStarsRotating] = useState(false)
+  const [showCities, setShowCities] = useState(true)
+  const [showFlights, setShowFlights] = useState(true)
+  const [showDots, setShowDots] = useState(true)
+  const [showISS, setShowISS] = useState(true)
+  const [starsRotating, setStarsRotating] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
   const [appliedDetail, setAppliedDetail] = useState(100)
   const [currentZoom, setCurrentZoom] = useState(100)
@@ -153,6 +154,13 @@ export default function App() {
     setMenuOpen(false)
     clearTimeout(mobileAutoRotateTimer.current)
     mobileAutoRotateTimer.current = setTimeout(() => {
+      const idx = mobileNavIdx.current
+      if (idx !== null) {
+        activeRef.current?.showCityBar(idx)
+        mobileNavIdx.current = null
+      }
+      activeRef.current?.hideBracket()
+      activeRef.current?.hideAllPings()
       activeRef.current?.resumeAutoRotate()
       setMobileZoomedLabel(null)
     }, IDLE_RETURN_MS)
@@ -165,7 +173,7 @@ export default function App() {
       <AppHeader
         isHolo={isHolo} holoMode={holoMode} holoReady={holoReady}
         showDots={showDots} showCities={showCities} showFlights={showFlights}
-        starsRotating={starsRotating} appliedDetail={appliedDetail}
+        showISS={showISS} starsRotating={starsRotating} appliedDetail={appliedDetail}
         currentZoom={currentZoom} menuOpen={menuOpen} active={active}
         navLinks={NAV_LINKS} locations={LOCATIONS} holoLocations={LOCATIONS_HOLO}
         activeRef={activeRef}
@@ -173,7 +181,7 @@ export default function App() {
         onLogoClick={() => { setActive(null); clearMobileMarkers() }}
         onHoloMode={setHoloMode}
         onShowDots={setShowDots} onShowCities={setShowCities}
-        onShowFlights={setShowFlights} onStarsRotating={setStarsRotating}
+        onShowFlights={setShowFlights} onShowISS={setShowISS} onStarsRotating={setStarsRotating}
         onApplyDetail={setAppliedDetail} onApplyZoom={applyZoom} onResetZoom={resetZoom}
         onMenuToggle={() => { if (menuOpen) clearMobileMarkers(); setMenuOpen(o => !o) }}
         onNavHover={setHoveredNavLink} onNavClick={setActive}
@@ -183,12 +191,12 @@ export default function App() {
         <MobileMenu
           isHolo={isHolo} holoMode={holoMode} holoReady={holoReady}
           showDots={showDots} showCities={showCities} showFlights={showFlights}
-          starsRotating={starsRotating} appliedDetail={appliedDetail}
+          showISS={showISS} starsRotating={starsRotating} appliedDetail={appliedDetail}
           currentZoom={currentZoom} active={active}
           navLinks={NAV_LINKS} locations={LOCATIONS} holoLocations={LOCATIONS_HOLO}
           onHoloMode={setHoloMode}
           onShowDots={setShowDots} onShowCities={setShowCities}
-          onShowFlights={setShowFlights} onStarsRotating={setStarsRotating}
+          onShowFlights={setShowFlights} onShowISS={setShowISS} onStarsRotating={setStarsRotating}
           onApplyDetail={setAppliedDetail} onApplyZoom={applyZoom} onResetZoom={resetZoom}
           onNavTap={handleMobileNavTap}
         />
@@ -198,13 +206,14 @@ export default function App() {
         {/* Both globes always mounted to preserve Three.js scene state across toggles. */}
         <div className="globe-wrap" onMouseMove={handleGlobeMouseMove} onMouseLeave={handleGlobeMouseLeave}>
           <div style={{ display: isHolo ? 'none' : 'block', width: '100%', height: '100%' }}>
-            <EarthGlobe
+            <WireframeEarth
               key="globe"
               ref={globeRef}
               locations={LOCATIONS}
               showCities={showCities}
               showFlights={showFlights}
               showDots={showDots}
+              showISS={showISS}
               starsRotating={starsRotating}
               navCityIndices={NAV_CITY_INDICES}
             />
@@ -218,6 +227,7 @@ export default function App() {
               onReady={() => setHoloReady(true)}
               showCities={showCities}
               showFlights={showFlights}
+              showISS={showISS}
               starsRotating={starsRotating}
               navCityIndices={NAV_CITY_INDICES}
               dotStep={dotStep}
@@ -226,7 +236,11 @@ export default function App() {
           </div>
         </div>
 
-        <HeroSection typedWords={typedWords} active={active} />
+        <HeroSection
+          typedWords={typedWords}
+          active={active}
+          onSnowmanClick={() => { clearMobileMarkers(); activeRef.current?.setPoleView() }}
+        />
 
         <HudReadout
           currentZoom={currentZoom} isHolo={isHolo}

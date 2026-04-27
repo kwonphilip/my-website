@@ -5,6 +5,7 @@ import airplaneIcon  from '../../assets/icons/airplane-icon2.png'
 import gridIcon      from '../../assets/icons/grid_icon.png'
 import rotationIcon  from '../../assets/icons/rotation_icon.png'
 import landscapeIcon from '../../assets/icons/landscape_icon.png'
+import sateliteIcon  from '../../assets/icons/satellite.png'
 
 const ZoomIcon = () => (
   <svg className="ctrl-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -20,7 +21,13 @@ export default function ControlsGuide() {
   const [open, setOpen] = useState(() => window.innerWidth > 900)
 
   useEffect(() => {
-    const onResize = () => { if (window.innerWidth <= 900) setOpen(false) }
+    let wasMobile = window.innerWidth <= 900
+    const onResize = () => {
+      const isMobile = window.innerWidth <= 900
+      if (isMobile) setOpen(false)
+      else if (wasMobile) setOpen(true)
+      wasMobile = isMobile
+    }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
@@ -52,15 +59,14 @@ export default function ControlsGuide() {
           <img src={airplaneIcon}  className="ctrl-icon" alt="" />
           <span>Flights</span><span>Toggle flight lanes</span>
 
+          <img src={sateliteIcon}  className="ctrl-icon" alt="" />
+          <span>ISS Tracker</span><span>Toggle ISS position marker</span>
+
           <ZoomIcon />
           <span>Zoom</span><span>Adjust globe size</span>
 
           <img src={worldwideIcon} className="ctrl-icon" alt="" />
-          <span>Globe &#x2194; Holo</span><span>Switch globe mode</span>
-
-          <span className="ctrl-hdr">Default view only</span>
-          <img src={gridIcon}      className="ctrl-icon" alt="" />
-          <span>Dots</span><span>Toggle hex grid</span>
+          <span>Holo &#x2194; Wireframe</span><span>Switch globe mode</span>
 
           <span className="ctrl-hdr">Holo view only</span>
           <span />
@@ -68,6 +74,10 @@ export default function ControlsGuide() {
 
           <img src={landscapeIcon} className="ctrl-icon" alt="" />
           <span>Terrain</span><span>Adjust terrain density</span>
+
+          <span className="ctrl-hdr">Wireframe view only</span>
+          <img src={gridIcon}      className="ctrl-icon" alt="" />
+          <span>Grid View</span><span>Toggle hex grid</span>
         </div>
       )}
     </>

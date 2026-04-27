@@ -111,7 +111,7 @@ html, body, #root {
   pointer-events: none;
 }
 
-.holo-active .toggle-thumb {
+.view-toggle:not(.holo-active) .toggle-thumb {
   transform: translateX(100%);
 }
 
@@ -139,8 +139,8 @@ html, body, #root {
   color: white;
 }
 
-.view-toggle:not(.holo-active) .toggle-side-left .toggle-img,
-.view-toggle.holo-active       .toggle-side-right .toggle-img {
+.view-toggle.holo-active       .toggle-side-left .toggle-img,
+.view-toggle:not(.holo-active) .toggle-side-right .toggle-img {
   opacity: 1;
   filter: brightness(0) invert(1)
           drop-shadow(0 0 4px rgba(91, 173, 255, 0.9))
