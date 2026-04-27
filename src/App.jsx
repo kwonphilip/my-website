@@ -17,31 +17,48 @@ import './App.css'
 
 export default function App() {
   // ── Refs ──────────────────────────────────────────────────────────────────
-  const globeRef = useRef(null)
-  const holoRef = useRef(null)
+
+  const globeRef = useRef(null)    // imperative handle for EarthGlobe
+  const holoRef  = useRef(null)    // imperative handle for HoloEarth
+  const activeRef = null           // reassigned below based on isHolo
+
+  // mobileNavIdx tracks which nav entry is currently highlighted on mobile so
+  // we can show its city bar again when the user taps elsewhere (toggle-off).
   const mobileNavIdx = useRef(null)
+
+  // Timer ID for resuming auto-rotation after a mobile nav tap. Stored in a ref
+  // so it can be cancelled if the user taps again before it fires.
   const mobileAutoRotateTimer = useRef(null)
+
+  // lastAppliedZoomRef is read by useMobileZoom to save the desktop zoom before
+  // switching to the mobile default. State can't be used here because the hook
+  // captures a closure at mount time; a ref is always current.
   const lastAppliedZoomRef = useRef(100)
-  const mousePosRef = useRef(null)
-  const mouseOnGlobeRef = useRef(false)
+
+  const mousePosRef      = useRef(null)   // last known mouse {x,y} in client coords
+  const mouseOnGlobeRef  = useRef(false)  // true while the cursor is over the globe area
+
+  // isHoloRef mirrors isHolo state but is readable inside the HUD polling interval
+  // (setInterval callbacks capture refs by reference, not state by value).
   const isHoloRef = useRef(false)
 
   // ── State ─────────────────────────────────────────────────────────────────
-  const [active, setActive] = useState(null)
-  const [hoveredNavLink, setHoveredNavLink] = useState(null)
-  const [mobileZoomedLabel, setMobileZoomedLabel] = useState(null)
-  const [isHolo, setIsHolo] = useState(false)
-  const [holoMode, setHoloMode] = useState('hologram')
-  const [holoReady, setHoloReady] = useState(false)
-  const [showCities, setShowCities] = useState(false)
-  const [showFlights, setShowFlights] = useState(false)
-  const [showDots, setShowDots] = useState(false)
+  const [active, setActive]               = useState(null)    // active nav label
+  const [hoveredNavLink, setHoveredNavLink] = useState(null)  // desktop nav hover
+  const [mobileZoomedLabel, setMobileZoomedLabel] = useState(null) // mobile tap label for HUD
+  const [isHolo, setIsHolo]               = useState(false)
+  const [holoMode, setHoloMode]           = useState('hologram')
+  const [holoReady, setHoloReady]         = useState(false)   // true once HoloEarth finishes async load
+  const [showCities, setShowCities]       = useState(false)
+  const [showFlights, setShowFlights]     = useState(false)
+  const [showDots, setShowDots]           = useState(false)
   const [starsRotating, setStarsRotating] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [appliedDetail, setAppliedDetail] = useState(100)
-  const [currentZoom, setCurrentZoom] = useState(100)
+  const [menuOpen, setMenuOpen]           = useState(false)
+  const [appliedDetail, setAppliedDetail] = useState(100)     // 50–150 detail level
+  const [currentZoom, setCurrentZoom]     = useState(100)     // 50–200 zoom level
 
-  const activeRef = isHolo ? holoRef : globeRef
+  // Point to whichever globe is currently in view so handlers don't need to branch.
+  const activeGlobeRef = isHolo ? holoRef : globeRef
 
   // ── Hooks ─────────────────────────────────────────────────────────────────
   const typedWords = useTypingAnimation(HERO_WORDS)
@@ -50,6 +67,7 @@ export default function App() {
   )
 
   // ── Zoom helpers ──────────────────────────────────────────────────────────
+  // applyZoom updates both globes simultaneously so switching views keeps the zoom consistent.
   const applyZoom = useCallback((percent) => {
     lastAppliedZoomRef.current = percent
     setCurrentZoom(percent)
@@ -63,12 +81,14 @@ export default function App() {
 
   // ── Effects ───────────────────────────────────────────────────────────────
 
-  // After each view toggle the newly visible renderer needs a resize event.
+  // After each view toggle the newly visible renderer needs a resize event so it
+  // recomputes its canvas dimensions (the previously hidden div was 0×0).
   useEffect(() => {
     window.dispatchEvent(new Event('resize'))
   }, [isHolo])
 
-  // When the mobile menu closes the globe container grows back; force a resize.
+  // When the mobile menu closes the globe container grows back; force a resize so
+  // Three.js fills the newly available space (one rAF delay avoids seeing the old size).
   useEffect(() => {
     if (!menuOpen) requestAnimationFrame(() => window.dispatchEvent(new Event('resize')))
   }, [menuOpen])
@@ -85,30 +105,35 @@ export default function App() {
     return () => window.removeEventListener('resize', onResize)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keep isHoloRef current so the HUD polling interval doesn't capture a stale value.
+  // Keep isHoloRef in sync with isHolo so the HUD polling interval always reads
+  // the correct value without closing over a stale isHolo.
   useEffect(() => { isHoloRef.current = isHolo }, [isHolo])
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
+  // Resets all mobile-nav visual state: cancels the auto-rotate timer, restores the
+  // city bar for the previously active nav, and hides brackets/pings.
   const clearMobileMarkers = useCallback(() => {
     clearTimeout(mobileAutoRotateTimer.current)
     mobileAutoRotateTimer.current = null
     const prev = mobileNavIdx.current
     if (prev !== null) {
-      activeRef.current?.showCityBar(prev)
+      activeGlobeRef.current?.showCityBar(prev)
       mobileNavIdx.current = null
     }
-    activeRef.current?.hideBracket()
-    activeRef.current?.hideAllPings()
-    activeRef.current?.resumeAutoRotate()
+    activeGlobeRef.current?.hideBracket()
+    activeGlobeRef.current?.hideAllPings()
+    activeGlobeRef.current?.resumeAutoRotate()
     setMobileZoomedLabel(null)
-  }, [activeRef])
+  }, [activeGlobeRef])
 
-  // Sync rotation between globes on toggle so the view doesn't jump.
+  // Sync the globe rotation on toggle so the view doesn't jump to a different
+  // longitude when switching between EarthGlobe and HoloEarth.
   const handleToggle = useCallback(() => {
     if (!isHolo) {
       const y = globeRef.current?.getRotationY() ?? 0
       holoRef.current?.setRotationY(y)
+      // If a city bar was hidden for a mobile nav, ensure HoloEarth also hides it.
       if (mobileNavIdx.current !== null) holoRef.current?.hideCityBar(mobileNavIdx.current)
     } else {
       const y = holoRef.current?.getRotationY() ?? 0
@@ -120,6 +145,8 @@ export default function App() {
 
   const { step: dotStep, dotRadius } = detailToParams(appliedDetail)
 
+  // Update mouse position refs on every mouse move so the HUD polling interval
+  // can read them without the move handler needing to call setHoveredCoords at 60 fps.
   const handleGlobeMouseMove = useCallback((e) => {
     mousePosRef.current = { x: e.clientX, y: e.clientY }
     mouseOnGlobeRef.current = true
@@ -132,6 +159,9 @@ export default function App() {
     setHoveredCoords(null)
   }, [setHoveredCoords])
 
+  // Mobile nav tap: tapping the same link a second time deactivates it (toggle off).
+  // Otherwise, show the location's bracket/ping, hide its city bar, rotate to it,
+  // and schedule auto-rotate to resume after IDLE_RETURN_MS.
   const handleMobileNavTap = useCallback((i, label, coords) => {
     if (active === label) {
       clearMobileMarkers()
@@ -140,23 +170,25 @@ export default function App() {
       return
     }
     const prev = mobileNavIdx.current
-    if (prev !== null && prev !== i) activeRef.current?.showCityBar(prev)
-    activeRef.current?.hideBracket()
-    activeRef.current?.hideAllPings()
-    activeRef.current?.rotateTo(coords.lat, coords.lon)
-    activeRef.current?.showBracket(i)
-    activeRef.current?.showPing(i)
-    activeRef.current?.hideCityBar(i)
+    // Restore the previous nav's city bar before switching to the new one.
+    if (prev !== null && prev !== i) activeGlobeRef.current?.showCityBar(prev)
+    activeGlobeRef.current?.hideBracket()
+    activeGlobeRef.current?.hideAllPings()
+    activeGlobeRef.current?.rotateTo(coords.lat, coords.lon)
+    activeGlobeRef.current?.showBracket(i)
+    activeGlobeRef.current?.showPing(i)
+    activeGlobeRef.current?.hideCityBar(i)
     mobileNavIdx.current = i
     setActive(label)
     setMobileZoomedLabel(label)
     setMenuOpen(false)
     clearTimeout(mobileAutoRotateTimer.current)
+    // Resume auto-rotation after the same idle timeout used by drag interactions.
     mobileAutoRotateTimer.current = setTimeout(() => {
-      activeRef.current?.resumeAutoRotate()
+      activeGlobeRef.current?.resumeAutoRotate()
       setMobileZoomedLabel(null)
     }, IDLE_RETURN_MS)
-  }, [active, activeRef, clearMobileMarkers])
+  }, [active, activeGlobeRef, clearMobileMarkers])
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -168,7 +200,7 @@ export default function App() {
         starsRotating={starsRotating} appliedDetail={appliedDetail}
         currentZoom={currentZoom} menuOpen={menuOpen} active={active}
         navLinks={NAV_LINKS} locations={LOCATIONS} holoLocations={LOCATIONS_HOLO}
-        activeRef={activeRef}
+        activeRef={activeGlobeRef}
         onToggle={handleToggle}
         onLogoClick={() => { setActive(null); clearMobileMarkers() }}
         onHoloMode={setHoloMode}
@@ -195,7 +227,12 @@ export default function App() {
       )}
 
       <main className="main">
-        {/* Both globes always mounted to preserve Three.js scene state across toggles. */}
+        {/*
+          Both globes are always mounted (never conditionally rendered) to preserve
+          their Three.js scenes across view toggles. Unmounting would destroy the
+          WebGL context, requiring a full rebuild on every switch — expensive and
+          visually jarring. Instead the inactive globe is hidden with display:none.
+        */}
         <div className="globe-wrap" onMouseMove={handleGlobeMouseMove} onMouseLeave={handleGlobeMouseLeave}>
           <div style={{ display: isHolo ? 'none' : 'block', width: '100%', height: '100%' }}>
             <EarthGlobe

@@ -1,3 +1,17 @@
+/**
+ * Slide-down overlay containing all controls and nav links for mobile (≤900 px).
+ *
+ * This is the mobile mirror of AppHeader's desktop controls section. The same
+ * props flow from App.jsx to both AppHeader and MobileMenu, keeping the two in
+ * sync without duplicating state. Only the layout differs.
+ *
+ * Nav taps here call `onNavTap(i, label, coords)` which maps to `handleMobileNavTap`
+ * in App.jsx: that handler rotates the globe, shows the bracket/ping, hides the city
+ * bar, and schedules auto-rotation to resume after IDLE_RETURN_MS.
+ *
+ * The hex-dot grid toggle is hidden in holo mode because HoloEarth uses elevation
+ * dots instead of the flat hex grid (showDots only applies to EarthGlobe).
+ */
 import ZoomControl  from './ZoomControl'
 import DetailControl from './DetailControl'
 import cityIcon     from '../../assets/icons/city_icon.png'
@@ -18,6 +32,7 @@ export default function MobileMenu({
   return (
     <div className="mobile-menu">
       <div className="mobile-menu-controls">
+        {/* Color-mode dropdown only shown in holo view */}
         {isHolo && (
           <select className="holo-mode-select" value={holoMode} onChange={e => onHoloMode(e.target.value)}>
             <option value="hologram">Hologram</option>
@@ -28,6 +43,7 @@ export default function MobileMenu({
           </select>
         )}
         <div className="mobile-menu-toggles">
+          {/* Hex-dot grid only exists in EarthGlobe, so hide this toggle in holo mode */}
           {!isHolo && (
             <button
               className={`icon-toggle${showDots ? ' icon-toggle-active' : ''}`}
@@ -65,6 +81,8 @@ export default function MobileMenu({
 
       <nav className="mobile-nav">
         {navLinks.map((link, i) => {
+          // Use HoloEarth-adjusted coordinates so rotateTo lands in the right place
+          // regardless of which globe is active.
           const coords = isHolo ? holoLocations[i] : locations[i]
           return (
             <button

@@ -1,3 +1,12 @@
+/**
+ * Collapsible controls reference panel shown in the hero section when no nav
+ * link is active.
+ *
+ * Starts open on desktop (>900 px) so first-time visitors immediately see how
+ * to interact with the globe. Auto-collapses when the window shrinks to mobile
+ * to avoid the panel taking up limited screen space — the user can still tap
+ * the "Controls" button to reopen it.
+ */
 import { useState, useEffect } from 'react'
 import worldwideIcon from '../../assets/icons/worldwide_icon.png'
 import cityIcon      from '../../assets/icons/city_icon.png'
@@ -17,8 +26,10 @@ const ZoomIcon = () => (
 )
 
 export default function ControlsGuide() {
+  // Initialise open on desktop so returning visitors don't have to discover the panel.
   const [open, setOpen] = useState(() => window.innerWidth > 900)
 
+  // Collapse automatically on mobile resize so the panel doesn't crowd the screen.
   useEffect(() => {
     const onResize = () => { if (window.innerWidth <= 900) setOpen(false) }
     window.addEventListener('resize', onResize)

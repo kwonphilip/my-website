@@ -1,3 +1,15 @@
+/**
+ * HUD overlay displaying current globe state in the bottom-right corner.
+ *
+ * The LOC field uses a priority stack:
+ *   1. hoveredCoords  — real-time lat/lon from mouse position on the globe surface
+ *   2. hoveredNavLink — coordinates of the desktop nav link currently under the cursor
+ *   3. mobileZoomedLabel — coordinates of the most recently tapped mobile nav link
+ *   4. '—'            — nothing to display
+ *
+ * This priority order ensures that precise mouse data always wins over the coarser
+ * "which nav is active" data, giving the feel of a live sensor readout.
+ */
 import { NAV_LINKS } from '../../data/navConfig.js'
 import { fmtCoords } from '../../utils/format.js'
 import './HudReadout.css'

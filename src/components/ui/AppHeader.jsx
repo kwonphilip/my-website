@@ -1,3 +1,25 @@
+/**
+ * Top navigation bar for desktop (≥900 px) and mobile header row.
+ *
+ * Desktop layout:  logo | controls | ViewToggle | nav links
+ * Mobile layout:   logo | ViewToggle + hamburger  (controls live in MobileMenu)
+ *
+ * Logo typewriter: on mouse-enter the name erases and re-types itself character by
+ * character; on mouse-leave it snaps back to the full name instantly. The animation
+ * uses recursive setTimeout so each character fires independently and can be cancelled
+ * at any point without leaving partial state.
+ *
+ * buildNavHandlers creates the hover/leave callbacks for each desktop nav link.
+ * On hover: rotate the globe to that city, show the bracket and ping, hide the city bar.
+ * On leave: resume auto-rotation, hide bracket/pings, restore the city bar.
+ * Centralising this in one factory keeps the JSX clean and the logic DRY.
+ *
+ * ── Visual levers ─────────────────────────────────────────────────────────
+ *   logoStep delay: 40 ms  Per-character typing speed for the logo animation.
+ *                          Lower = faster typing; higher = more deliberate.
+ *   logoStep pause: 3000 ms  How long the fully typed logo pauses before restarting.
+ *                            Raise for a calmer effect; lower for a more restless one.
+ */
 import { useEffect, useRef } from 'react'
 import ViewToggle from './ViewToggle'
 import ZoomControl from './ZoomControl'
@@ -10,6 +32,10 @@ import './AppHeader.css'
 
 const LOGO_TEXT = 'Philip Kwon'
 
+/**
+ * Returns `{ onEnter, onLeave }` event handlers for one desktop nav link.
+ * Extracted from the component to avoid re-creating inline functions on every render.
+ */
 function buildNavHandlers(i, coords, label, activeRef, onNavHover) {
   return {
     onEnter: () => {
@@ -17,14 +43,14 @@ function buildNavHandlers(i, coords, label, activeRef, onNavHover) {
       activeRef.current?.rotateTo(coords.lat, coords.lon)
       activeRef.current?.showBracket(i)
       activeRef.current?.showPing(i)
-      activeRef.current?.hideCityBar(i)
+      activeRef.current?.hideCityBar(i)  // city bar hides while the bracket is shown
     },
     onLeave: () => {
       onNavHover(null)
       activeRef.current?.resumeAutoRotate()
       activeRef.current?.hideBracket()
       activeRef.current?.hideAllPings()
-      activeRef.current?.showCityBar(i)
+      activeRef.current?.showCityBar(i)  // restore city bar after leaving
     },
   }
 }
@@ -40,20 +66,22 @@ export default function AppHeader({
   onApplyDetail, onApplyZoom, onResetZoom,
   onMenuToggle, onNavHover, onNavClick,
 }) {
-  const logoTextRef   = useRef(null)
-  const logoCursorRef = useRef(null)
-  const logoTimerRef  = useRef(null)
-  const logoActiveRef = useRef(false)
+  const logoTextRef   = useRef(null)  // <span> holding the visible logo text
+  const logoCursorRef = useRef(null)  // <span> for the blinking cursor character
+  const logoTimerRef  = useRef(null)  // setTimeout ID for the typewriter chain
+  const logoActiveRef = useRef(false) // prevents a queued step from running after mouse-leave
 
+  // Recursive typewriter: types one character per call, then schedules the next.
+  // When fully typed, adds the blink class and schedules a restart from i=0.
   function logoStep(i) {
     if (!logoActiveRef.current) return
     logoTextRef.current.textContent = LOGO_TEXT.slice(0, i)
     if (i < LOGO_TEXT.length) {
       logoCursorRef.current.classList.remove('logo-cursor--blink')
-      logoTimerRef.current = setTimeout(() => logoStep(i + 1), 40)
+      logoTimerRef.current = setTimeout(() => logoStep(i + 1), 40) // 40 ms per character
     } else {
       logoCursorRef.current.classList.add('logo-cursor--blink')
-      logoTimerRef.current = setTimeout(() => logoStep(0), 3000)
+      logoTimerRef.current = setTimeout(() => logoStep(0), 3000) // 3 s pause then restart
     }
   }
 
@@ -61,7 +89,7 @@ export default function AppHeader({
     logoActiveRef.current = true
     logoCursorRef.current.style.visibility = 'visible'
     clearTimeout(logoTimerRef.current)
-    logoStep(0)
+    logoStep(0) // start erasing from full name immediately
   }
 
   function handleLogoLeave() {
@@ -69,9 +97,10 @@ export default function AppHeader({
     clearTimeout(logoTimerRef.current)
     logoCursorRef.current.style.visibility = 'hidden'
     logoCursorRef.current.classList.remove('logo-cursor--blink')
-    logoTextRef.current.textContent = LOGO_TEXT
+    logoTextRef.current.textContent = LOGO_TEXT // snap back to full name instantly
   }
 
+  // Clean up any pending timer when the header unmounts (e.g. during dev HMR).
   useEffect(() => () => clearTimeout(logoTimerRef.current), [])
 
   return (
@@ -93,6 +122,7 @@ export default function AppHeader({
         <div className="toggle-wrap">
           {isHolo && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              {/* Show a loading indicator until HoloEarth's async dot build completes */}
               {!holoReady && (
                 <span style={{ color: 'rgba(0,180,255,0.7)', fontSize: '0.7rem', letterSpacing: '0.12em', fontFamily: 'monospace' }}>
                   Loading…
@@ -107,6 +137,7 @@ export default function AppHeader({
               </select>
             </div>
           )}
+          {/* Hex-dot grid toggle only makes sense in EarthGlobe mode */}
           {!isHolo && (
             <button
               className={`icon-toggle${showDots ? ' icon-toggle-active' : ''}`}
@@ -147,6 +178,8 @@ export default function AppHeader({
 
         <nav className="nav">
           {navLinks.map((link, i) => {
+            // Use the HoloEarth-adjusted coordinates when in holo mode so the globe
+            // rotates to the correct position despite the +π y-rotation offset.
             const coords = isHolo ? holoLocations[i] : locations[i]
             const { onEnter, onLeave } = buildNavHandlers(i, coords, link.label, activeRef, onNavHover)
             return (
@@ -164,7 +197,7 @@ export default function AppHeader({
         </nav>
       </div>
 
-      {/* Mobile: view toggle + hamburger */}
+      {/* Mobile: view toggle + hamburger (all other controls are in MobileMenu) */}
       <div className="mobile-only">
         <ViewToggle isHolo={isHolo} onClick={onToggle} />
         <button
