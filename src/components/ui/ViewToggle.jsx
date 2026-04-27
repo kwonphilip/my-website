@@ -16,11 +16,11 @@ export default function ViewToggle({ isHolo, onClick }) {
       aria-label="Toggle view"
     >
       <span className="toggle-side toggle-side-left">
-        <img src={worldwideIcon} alt="Standard" className="toggle-img" />
+        <img src={hologramIcon} alt="Hologram" className="toggle-img" />
       </span>
       <span className="toggle-thumb" />
       <span className="toggle-side toggle-side-right">
-        <img src={hologramIcon} alt="Hologram" className="toggle-img" />
+        <img src={worldwideIcon} alt="Standard" className="toggle-img" />
       </span>
     </button>
   )

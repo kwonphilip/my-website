@@ -87,6 +87,26 @@
   white-space: pre;
 }
 
+.hero-detail-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  color: var(--text);
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+
+.hero-detail-link:hover {
+  color: var(--accent);
+}
+
 /* ── ControlsGuide styles ── */
 
 .ctrl-toggle-btn {

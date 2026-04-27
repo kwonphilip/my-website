@@ -24,10 +24,11 @@ import { useEffect, useRef } from 'react'
 import ViewToggle from './ViewToggle'
 import ZoomControl from './ZoomControl'
 import DetailControl from './DetailControl'
-import cityIcon     from '../../assets/icons/city_icon.png'
-import airplaneIcon from '../../assets/icons/airplane-icon2.png'
-import gridIcon     from '../../assets/icons/grid_icon.png'
-import rotationIcon from '../../assets/icons/rotation_icon.png'
+import cityIcon      from '../../assets/icons/city_icon.png'
+import airplaneIcon  from '../../assets/icons/airplane-icon2.png'
+import gridIcon      from '../../assets/icons/grid_icon.png'
+import rotationIcon  from '../../assets/icons/rotation_icon.png'
+import satelliteIcon from '../../assets/icons/satellite.png'
 import './AppHeader.css'
 
 const LOGO_TEXT = 'Philip Kwon'
@@ -57,12 +58,12 @@ function buildNavHandlers(i, coords, label, activeRef, onNavHover) {
 
 export default function AppHeader({
   isHolo, holoMode, holoReady,
-  showDots, showCities, showFlights, starsRotating,
+  showDots, showCities, showFlights, showISS, starsRotating,
   appliedDetail, currentZoom,
   menuOpen, active,
   navLinks, locations, holoLocations, activeRef,
   onToggle, onLogoClick, onHoloMode,
-  onShowDots, onShowCities, onShowFlights, onStarsRotating,
+  onShowDots, onShowCities, onShowFlights, onShowISS, onStarsRotating,
   onApplyDetail, onApplyZoom, onResetZoom,
   onMenuToggle, onNavHover, onNavClick,
 }) {
@@ -129,7 +130,7 @@ export default function AppHeader({
                 </span>
               )}
               <select className="holo-mode-select" value={holoMode} onChange={e => onHoloMode(e.target.value)}>
-                <option value="hologram">Hologram</option>
+                <option value="blue">Blue</option>
                 <option value="white">White</option>
                 <option value="day">Day</option>
                 <option value="night">Night</option>
@@ -168,6 +169,13 @@ export default function AppHeader({
             aria-label="Toggle flight lanes"
           >
             <img src={airplaneIcon} alt="Flights" className="toggle-img" />
+          </button>
+          <button
+            className={`icon-toggle${showISS ? ' icon-toggle-active' : ''}`}
+            onClick={() => onShowISS(v => !v)}
+            aria-label="Toggle ISS tracker"
+          >
+            <img src={satelliteIcon} alt="ISS" className="toggle-img" />
           </button>
           <ZoomControl zoom={currentZoom} onApply={onApplyZoom} onReset={onResetZoom} />
         </div>

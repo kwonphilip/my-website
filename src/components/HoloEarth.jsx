@@ -46,6 +46,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { latLonToVec3 }          from '../utils/geo.js'
 import { buildShippingLanes }    from '../builders/buildShippingLanes.js'
 import { buildPingsAndBrackets } from '../builders/buildPingsAndBrackets.js'
+import { buildISSTracker }       from '../builders/buildISSTracker.js'
 import { ROUTES, shiftRoutesForHolo } from '../data/routes.js'
 import starsUrl from '../assets/textures/8k_stars.jpg'
 
@@ -69,7 +70,7 @@ const { PI } = Math
 const HOLO_ROUTES = shiftRoutesForHolo(ROUTES)
 
 const HoloEarth = forwardRef(function HoloEarth(
-  { locations = [], initialY = 0, colorMode = 'hologram', onReady, showCities = true, showFlights = true, starsRotating = true, navCityIndices = [], dotStep = STEP, dotRadius = DOT_RADIUS },
+  { locations = [], initialY = 0, colorMode = 'hologram', onReady, showCities = true, showFlights = true, starsRotating = true, showISS = false, navCityIndices = [], dotStep = STEP, dotRadius = DOT_RADIUS },
   ref,
 ) {
   const mountRef      = useRef(null)
@@ -89,6 +90,7 @@ const HoloEarth = forwardRef(function HoloEarth(
     targetX:        0,
     targetY:        initialY + PI,
     targetZoom:     ZOOM_DEFAULT,
+    targetCameraY:  0,
     cancelAnim:     null,
     mesh:           null,
     points:         null,
@@ -106,6 +108,10 @@ const HoloEarth = forwardRef(function HoloEarth(
     navCityIndices:       navCityIndices,
     pendingHideCityNavIdx: null,
     colorMode:      colorMode,
+    updateISS:       null,
+    updateISSLabel:  null,
+    disposeISS:      null,
+    setISSVisible:   null,
     isDragging:     false,
     dragLastX:      0,
     dragLastY:      0,
@@ -125,6 +131,7 @@ const HoloEarth = forwardRef(function HoloEarth(
       if (!s.globe) return
       s.autoRotate = false
       s.targetZoom = ZOOM_IN / s.zoomScale
+      s.targetCameraY = 0
       const curY = ((s.globe.rotation.y % (2*PI)) + 2*PI) % (2*PI)
       let   tgtY = ((-lon * PI / 180)             % (2*PI) + 2*PI) % (2*PI)
       let   diff = tgtY - curY
@@ -134,11 +141,27 @@ const HoloEarth = forwardRef(function HoloEarth(
       s.targetY = curY + diff
       s.targetX = lat * PI / 180
     },
+    setPoleView() {
+      const s = stateRef.current
+      if (!s.globe) return
+      s.autoRotate = false
+      s.targetZoom = 0.28 / s.zoomScale
+      s.targetCameraY = 0.9
+      s.targetX = 0
+      // Shortest-path rotate to Y=0 so the snowman's face (+Z) points at the camera.
+      const curY = ((s.globe.rotation.y % (2*PI)) + 2*PI) % (2*PI)
+      let   diff = 0.86 * PI - curY
+      if (diff >  PI) diff -= 2*PI
+      if (diff < -PI) diff += 2*PI
+      s.globe.rotation.y = curY
+      s.targetY = curY + diff
+    },
     resumeAutoRotate() {
       const s = stateRef.current
       if (s.globe) s.autoY = s.globe.rotation.y
       s.autoRotate = true
       s.targetZoom = ZOOM_DEFAULT / s.zoomScale
+      s.targetCameraY = 0
     },
     // Strip the internal +π offset before returning — external callers use standard coords.
     getRotationY()  { return (stateRef.current.globe?.rotation.y ?? PI) - PI },
@@ -227,7 +250,7 @@ const HoloEarth = forwardRef(function HoloEarth(
     const scene  = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100)
     camera.position.z = ZOOM_DEFAULT
-    if (!isMobile) camera.setViewOffset(w, h, -w * 0.25, 0, w, h)
+    if (!isMobile) camera.setViewOffset(w, h, -w * 0.22, 0, w, h)
     s.camera = camera
 
     // ── Selective bloom setup ────────────────────────────────────────────
@@ -280,11 +303,11 @@ const HoloEarth = forwardRef(function HoloEarth(
     const fillMat = new THREE.MeshBasicMaterial({
       color: 0x001a2e, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.FrontSide,
     })
-    globe.add(new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), fillMat))
+    globe.add(new THREE.Mesh(new THREE.SphereGeometry(1.007, 32, 32), fillMat))
     s.fillMat = fillMat
 
     // Lat/lon reference grid.
-    const gridMat = new THREE.LineBasicMaterial({ color: 0x1a3d6e, transparent: true, opacity: 0.3 })
+    const gridMat = new THREE.LineBasicMaterial({ color: 0x1a3d6e, transparent: true, opacity: 0.5 })
     for (let lat = -80; lat <= 80; lat += 20) {
       const pts = []
       for (let lon = 0; lon <= 360; lon += 2) pts.push(latLonToVec3(lat, lon, 1.005))
@@ -320,6 +343,13 @@ const HoloEarth = forwardRef(function HoloEarth(
     s.lanesGroup    = lanesGroup
     s.updatePlanes  = updatePlanes
     lanesGroup.visible = showFlights
+
+    // ISS tracker — uses shiftLon so positions align with HoloEarth's +π rotation.
+    const { updateISS, updateISSLabel, disposeISS, setISSVisible } = buildISSTracker(globe, 1.0, { shiftLon, container: labelsRef.current })
+    s.updateISS     = updateISS
+    s.updateISSLabel = updateISSLabel
+    s.disposeISS    = disposeISS
+    s.setISSVisible = setISSVisible
 
     // ── Elevation dots and city bars (async) ─────────────────────────────
     // See ./HoloEarth/buildElevationDots.js for the full pipeline.
@@ -393,15 +423,18 @@ const HoloEarth = forwardRef(function HoloEarth(
         globe.rotation.z += (0 - globe.rotation.z) * 0.04
       }
 
-      camera.position.z += (st.targetZoom - camera.position.z) * 0.06
+      camera.position.z += (st.targetZoom    - camera.position.z) * 0.06
+      camera.position.y += (st.targetCameraY - camera.position.y) * 0.04
+      camera.lookAt(0, camera.position.y, 0)
 
       // Slowly rotate the starfield sphere.
       if (st.starSphere && st.starsRotating) st.starSphere.rotation.y += 0.0002
 
       const t = (Date.now() - startTime) / 1000
-      if (st.lanesMat)    st.lanesMat.uniforms.uTime.value  = t
+      if (st.lanesMat)     st.lanesMat.uniforms.uTime.value  = t
       if (st.updatePlanes) st.updatePlanes(t)
-      if (st.pingMat)   st.pingMat.uniforms.uTime.value   = t
+      if (st.updateISS)    st.updateISS(t)
+      if (st.pingMat)      st.pingMat.uniforms.uTime.value   = t
       for (const m of st.buildingMats) m.uniforms.uTime.value = t
 
       // Pass 1: bloom — renders only BLOOM_LAYER objects to offscreen buffer.
@@ -418,7 +451,8 @@ const HoloEarth = forwardRef(function HoloEarth(
       renderer.autoClear = true
 
       // Update city label positions and typing animation (after render so matrixWorld is fresh).
-      if (st.cityLabelSystem) st.cityLabelSystem.update(t, globe, camera, renderer.domElement)
+      if (st.cityLabelSystem)  st.cityLabelSystem.update(t, globe, camera, renderer.domElement)
+      if (st.updateISSLabel)   st.updateISSLabel(globe, camera, renderer.domElement)
     }
     animate()
     s.cancelAnim = () => cancelAnimationFrame(rafId)
@@ -439,7 +473,7 @@ const HoloEarth = forwardRef(function HoloEarth(
       if (w2 <= 900) {
         camera.clearViewOffset()
       } else {
-        camera.setViewOffset(w2, h2, -w2 * 0.25, 0, w2, h2)
+        camera.setViewOffset(w2, h2, -w2 * 0.22, 0, w2, h2)
       }
       camera.updateProjectionMatrix()
       renderer.setSize(w2, h2)
@@ -458,6 +492,7 @@ const HoloEarth = forwardRef(function HoloEarth(
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
       s.starSphere?.material.map?.dispose()
       s.cityLabelSystem?.dispose()
+      s.disposeISS?.()
       renderer.dispose()
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -494,6 +529,11 @@ const HoloEarth = forwardRef(function HoloEarth(
   useEffect(() => {
     if (stateRef.current.lanesGroup) stateRef.current.lanesGroup.visible = showFlights
   }, [showFlights])
+
+  // ── ISS visibility toggle ───────────────────────────────────────────────
+  useEffect(() => {
+    stateRef.current.setISSVisible?.(showISS)
+  }, [showISS])
 
   // ── Starfield rotation toggle ───────────────────────────────────────────
   useEffect(() => {

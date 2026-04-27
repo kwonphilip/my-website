@@ -132,7 +132,8 @@ function makeLabel(container) {
   const nameEl = document.createElement('div')
   nameEl.style.cssText =
     'font-family:monospace;font-size:0.62rem;letter-spacing:0.14em;' +
-    'text-transform:uppercase;color:rgba(255,255,255,0.95);font-weight:700;'
+    'text-transform:uppercase;color:rgba(255,255,255,0.95);font-weight:700;' +
+    'white-space:pre-line;'
 
   const coordEl = document.createElement('div')
   coordEl.style.cssText =
@@ -264,10 +265,12 @@ export function createCityLabelSystem(container, { lonTransform = lon => lon, an
       _v.applyMatrix4(globe.matrixWorld)
 
       // Facing check: is the city on the hemisphere pointing toward the camera?
-      // A dot product < 0.12 means the city is at the globe's edge or behind it.
+      // Threshold of -0.1 gives ~6° of leeway past the geometric horizon so that
+      // near-edge cities (e.g. North Pole during auto-spin) stay visible, while
+      // cities clearly behind the globe are still hidden.
       _n.copy(_v).normalize()
       _cd.subVectors(camera.position, _v).normalize()
-      const isOccluded = _n.dot(_cd) < 0.12
+      const isOccluded = _n.dot(_cd) < -0.1
 
       // Project from world space to canvas pixels.
       _v.project(camera)

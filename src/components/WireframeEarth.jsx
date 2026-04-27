@@ -1,5 +1,5 @@
 /**
- * EarthGlobe — standard blue-tech globe.
+ * WireframeEarth — standard blue-tech globe.
  *
  * Features:
  *   • Hex-grid dot overlay on landmasses (breathing + warm blinks)
@@ -39,14 +39,14 @@ import { buildGlobeScene } from './EarthGlobe/buildGlobeScene.js'
 import { createCityLabelSystem } from '../utils/cityLabels.js'
 import { setupGlobeDrag } from '../hooks/globeDrag.js'
 import {
-  ZOOM_DEFAULT, ZOOM_IN, BG_COLOR,
+  ZOOM_DEFAULT, ZOOM_IN, BG_COLOR, RADIUS,
   AXIAL_TILT, AXIAL_TILT_Z, IDLE_RETURN_MS,
 } from './EarthGlobe/constants.js'
 
 const { PI } = Math
 
-const EarthGlobe = forwardRef(function EarthGlobe(
-  { locations = [], initialY = 0, showCities = true, showFlights = true, showDots = true, starsRotating = true, navCityIndices = [] },
+const WireframeEarth = forwardRef(function WireframeEarth(
+  { locations = [], initialY = 0, showCities = true, showFlights = true, showDots = true, starsRotating = true, showISS = false, navCityIndices = [] },
   ref,
 ) {
   const mountRef  = useRef(null)
@@ -63,6 +63,7 @@ const EarthGlobe = forwardRef(function EarthGlobe(
     targetX:         0,
     targetY:         initialY,
     targetZoom:      ZOOM_DEFAULT,
+    targetCameraY:   0,
     cancelAnim:      null,
     coastMats:       [],
     dotsMat:         null,
@@ -79,6 +80,15 @@ const EarthGlobe = forwardRef(function EarthGlobe(
     cityGroup:       null,
     citySubGroups:   [],
     navCityIndices:  navCityIndices,
+    updateISS:       null,
+    updateISSLabel:  null,
+    disposeISS:      null,
+    setISSVisible:   null,
+    issGroup:        null,
+    issRing:         null,
+    issBeam:         null,
+    issScan:         null,
+    issSpot:         null,
     isDragging:      false,
     dragLastX:       0,
     dragLastY:       0,
@@ -94,6 +104,7 @@ const EarthGlobe = forwardRef(function EarthGlobe(
       if (!s.globe) return
       s.autoRotate = false
       s.targetZoom = ZOOM_IN / s.zoomScale
+      s.targetCameraY = 0
       // Shortest-path rotation: pick the diff that stays within ±π.
       const curY = ((s.globe.rotation.y % (2*PI)) + 2*PI) % (2*PI)
       let   tgtY = ((-lon * PI / 180)   % (2*PI) + 2*PI) % (2*PI)
@@ -104,11 +115,27 @@ const EarthGlobe = forwardRef(function EarthGlobe(
       s.targetY = curY + diff
       s.targetX = lat * PI / 180
     },
+    setPoleView() {
+      const s = stateRef.current
+      if (!s.globe) return
+      s.autoRotate = false
+      s.targetZoom = 0.28 / s.zoomScale
+      s.targetCameraY = RADIUS
+      s.targetX = 0
+      // Shortest-path rotate to Y=0 so the snowman's face (+Z) points at the camera.
+      const curY = ((s.globe.rotation.y % (2*PI)) + 2*PI) % (2*PI)
+      let   diff = 0.86 * PI - curY
+      if (diff >  PI) diff -= 2*PI
+      if (diff < -PI) diff += 2*PI
+      s.globe.rotation.y = curY
+      s.targetY = curY + diff
+    },
     resumeAutoRotate() {
       const s = stateRef.current
       if (s.globe) s.autoY = s.globe.rotation.y
       s.autoRotate = true
       s.targetZoom = ZOOM_DEFAULT / s.zoomScale
+      s.targetCameraY = 0
     },
     getRotationY()  { return stateRef.current.globe?.rotation.y ?? 0 },
     setRotationY(y) {
@@ -188,7 +215,7 @@ const EarthGlobe = forwardRef(function EarthGlobe(
     const scene  = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100)
     camera.position.z = ZOOM_DEFAULT
-    if (!isMobile) camera.setViewOffset(w, h, -w * 0.25, 0, w, h)
+    if (!isMobile) camera.setViewOffset(w, h, -w * 0.22, 0, w, h)
     s.camera = camera
 
     const renderer = new THREE.WebGLRenderer({ antialias: true })
@@ -228,10 +255,10 @@ const EarthGlobe = forwardRef(function EarthGlobe(
     finalComposer.addPass(new RenderPass(scene, camera))
     finalComposer.addPass(finalPass)
 
-    const { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats } = buildGlobeScene(locations, w, h)
+    const { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats, updateISS, updateISSLabel, disposeISS, setISSVisible, issGroup, issRing, issBeam, issScan, issSpot } = buildGlobeScene(locations, w, h, labelsRef.current)
     scene.add(starSphere)
     scene.add(globe)
-    Object.assign(s, { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats })
+    Object.assign(s, { globe, starSphere, coastMats, dotsMat, dotsMesh, landTex, lanesMat, lanesGroup, updatePlanes, pingMat, pingPoints, bracketGroups, bracketMat, cityGroup, citySubGroups, buildingMats, updateISS, updateISSLabel, disposeISS, setISSVisible, issGroup, issRing, issBeam, issScan, issSpot })
     globe.rotation.order  = 'XZY'
     globe.rotation.y      = initialY
     cityGroup.visible     = showCities
@@ -265,7 +292,9 @@ const EarthGlobe = forwardRef(function EarthGlobe(
       } else {
         globe.rotation.z += (0 - globe.rotation.z) * 0.04
       }
-      camera.position.z += (st.targetZoom - camera.position.z) * 0.06
+      camera.position.z += (st.targetZoom    - camera.position.z) * 0.06
+      camera.position.y += (st.targetCameraY - camera.position.y) * 0.04
+      camera.lookAt(0, camera.position.y, 0)
 
       // Slowly rotate the starfield sphere.
       if (st.starSphere && st.starsRotating) st.starSphere.rotation.y += 0.0002
@@ -275,18 +304,35 @@ const EarthGlobe = forwardRef(function EarthGlobe(
       if (st.dotsMat)   st.dotsMat.uniforms.uTime.value   = t
       if (st.lanesMat)    st.lanesMat.uniforms.uTime.value  = t
       if (st.updatePlanes) st.updatePlanes(t)
+      if (st.updateISS)    st.updateISS(t)
       if (st.pingMat)   st.pingMat.uniforms.uTime.value   = t
       for (const m of st.buildingMats) m.uniforms.uTime.value = t
 
-      // Bloom pass: hide buildings so they don't contribute to the bloom RT.
+      // Bloom pass: hide buildings and ISS so they don't contribute to the bloom RT.
       const cityWasVisible = st.cityGroup?.visible ?? false
+      const issWasVisible  = st.issGroup?.visible  ?? false
+      const ringWasVisible = st.issRing?.visible   ?? false
+      const beamWasVisible = st.issBeam?.visible   ?? false
+      const scanWasVisible = st.issScan?.visible   ?? false
+      const spotWasVisible = st.issSpot?.visible   ?? false
       if (st.cityGroup) st.cityGroup.visible = false
+      if (st.issGroup)  st.issGroup.visible  = false
+      if (st.issRing)   st.issRing.visible   = false
+      if (st.issBeam)   st.issBeam.visible   = false
+      if (st.issScan)   st.issScan.visible   = false
+      if (st.issSpot)   st.issSpot.visible   = false
       bloomComposer.render()
       if (st.cityGroup) st.cityGroup.visible = cityWasVisible
+      if (st.issGroup)  st.issGroup.visible  = issWasVisible
+      if (st.issRing)   st.issRing.visible   = ringWasVisible
+      if (st.issBeam)   st.issBeam.visible   = beamWasVisible
+      if (st.issScan)   st.issScan.visible   = scanWasVisible
+      if (st.issSpot)   st.issSpot.visible   = spotWasVisible
       finalComposer.render()
 
       // Update city label positions and typing animation (after render so matrixWorld is fresh).
       if (st.cityLabelSystem) st.cityLabelSystem.update(t, globe, camera, renderer.domElement)
+      if (st.updateISSLabel)  st.updateISSLabel(globe, camera, renderer.domElement)
     }
     animate()
     s.cancelAnim = () => cancelAnimationFrame(rafId)
@@ -307,7 +353,7 @@ const EarthGlobe = forwardRef(function EarthGlobe(
       if (w2 <= 900) {
         camera.clearViewOffset()
       } else {
-        camera.setViewOffset(w2, h2, -w2 * 0.25, 0, w2, h2)
+        camera.setViewOffset(w2, h2, -w2 * 0.22, 0, w2, h2)
       }
       camera.updateProjectionMatrix()
       renderer.setSize(w2, h2)
@@ -326,6 +372,7 @@ const EarthGlobe = forwardRef(function EarthGlobe(
       if (mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement)
       s.landTex?.dispose()
       s.cityLabelSystem?.dispose()
+      s.disposeISS?.()
       renderer.dispose()
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -347,6 +394,11 @@ const EarthGlobe = forwardRef(function EarthGlobe(
     if (stateRef.current.dotsMesh) stateRef.current.dotsMesh.visible = showDots
   }, [showDots])
 
+  // ── ISS visibility toggle ───────────────────────────────────────────────
+  useEffect(() => {
+    stateRef.current.setISSVisible?.(showISS)
+  }, [showISS])
+
   // ── Starfield rotation toggle ───────────────────────────────────────────
   useEffect(() => {
     stateRef.current.starsRotating = starsRotating
@@ -363,4 +415,4 @@ const EarthGlobe = forwardRef(function EarthGlobe(
   )
 })
 
-export default EarthGlobe
+export default WireframeEarth
