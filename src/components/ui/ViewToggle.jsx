@@ -1,5 +1,5 @@
 /**
- * Toggle pill that switches between the standard EarthGlobe and HoloEarth views.
+ * Toggle pill that switches between the standard WireframeEarth and HoloEarth views.
  *
  * Layout: [ globe icon ] [ thumb ] [ holo icon ]
  * The `holo-active` class shifts the thumb right and brightens the holo icon

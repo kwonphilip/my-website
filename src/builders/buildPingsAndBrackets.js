@@ -1,6 +1,6 @@
 /**
  * Builds the nav-location markers: pulsing ping rings and hover brackets.
- * Used by both EarthGlobe and HoloEarth with different options (see below).
+ * Used by both WireframeEarth and HoloEarth with different options (see below).
  *
  * Pings — one THREE.Points per location, initially hidden.
  *         Show/hide per-location via pingPoints[i].visible.
@@ -20,11 +20,11 @@
  *
  * ── Options ───────────────────────────────────────────────────────────────
  *   pingRadius     — radius at which ping points sit above the surface.
- *                    EarthGlobe: RADIUS * 1.005  (= ~0.9045, local units).
+ *                    WireframeEarth: RADIUS * 1.005  (= ~0.9045, local units).
  *                    HoloEarth:  1.005           (local units; globe scale = 0.9).
  *
  *   bracketRadius  — radius at which bracket corners sit (slightly higher than pings).
- *                    EarthGlobe: RADIUS * 1.007  |  HoloEarth: 1.007
+ *                    WireframeEarth: RADIUS * 1.007  |  HoloEarth: 1.007
  *
  *   resolution     — THREE.Vector2(w, h) for pixel-accurate LineMaterial linewidth.
  *                    Both globes pass their canvas dimensions; must be updated on resize
@@ -33,7 +33,7 @@
  *   bloomLayer     — optional Three.js layer index for selective bloom.
  *                    HoloEarth: pass BLOOM_LAYER (= 1) — pings and brackets are tagged
  *                    so the bloomComposer gives them a glow without affecting the dots.
- *                    EarthGlobe: omit — global UnrealBloomPass handles bloom uniformly.
+ *                    WireframeEarth: omit — global UnrealBloomPass handles bloom uniformly.
  */
 
 import * as THREE from 'three'

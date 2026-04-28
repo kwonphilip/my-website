@@ -1,7 +1,7 @@
 /**
- * Animated city label overlay — shared by both EarthGlobe and HoloEarth.
+ * Animated city label overlay — shared by both WireframeEarth and HoloEarth.
  *
- * Previously lived in components/HoloEarth/ but was imported by EarthGlobe too,
+ * Previously lived in components/HoloEarth/ but was imported by WireframeEarth too,
  * so it was moved here to correctly reflect its shared/utility nature.
  *
  * Behaviour:
@@ -17,9 +17,9 @@
  *   sys.dispose()
  *
  * The `lonTransform` option lets HoloEarth shift its city longitudes by ±180° to
- * compensate for the globe's +π initial rotation. EarthGlobe omits it (identity).
+ * compensate for the globe's +π initial rotation. WireframeEarth omits it (identity).
  * The `anchorRadius` option controls where on the globe the label anchor sits;
- * EarthGlobe uses 0.93 to match its sphere radius, HoloEarth uses the default 1.03.
+ * WireframeEarth uses 0.93 to match its sphere radius, HoloEarth uses the default 1.03.
  */
 
 import * as THREE from 'three'
@@ -164,10 +164,10 @@ function makeLabel(container) {
  * @param {object}      opts
  * @param {function}    [opts.lonTransform]   Maps a city longitude before projecting.
  *   HoloEarth passes shiftLon (±180° shift) to account for its +π globe rotation.
- *   EarthGlobe omits this (identity, no shift).
+ *   WireframeEarth omits this (identity, no shift).
  * @param {number|function} [opts.anchorRadius]  Globe-surface radius to place the anchor at.
  *   Pass a number for a fixed radius, or a function (lat, lon) => number for a per-city
- *   terrain-aware radius. EarthGlobe uses 0.93; HoloEarth passes a function that reads
+ *   terrain-aware radius. WireframeEarth uses 0.93; HoloEarth passes a function that reads
  *   the bump map so the anchor stays above building tops on high terrain.
  */
 export function createCityLabelSystem(container, { lonTransform = lon => lon, anchorRadius = 1.03 } = {}) {

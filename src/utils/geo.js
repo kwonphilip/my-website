@@ -2,7 +2,7 @@
  * Geographic / Three.js geometry utilities shared across both globe components.
  *
  * Used by:
- *   EarthGlobe — latLonToVec3, addGeoLines, addThickGeoLines, buildLandMaskTexture,
+ *   WireframeEarth — latLonToVec3, addGeoLines, addThickGeoLines, buildLandMaskTexture,
  *                worldData, topojson
  *   HoloEarth  — latLonToVec3 only (no coastlines or land mask — uses elevation dots instead)
  *   Builders   — latLonToVec3 used in buildShippingLanes, buildPingsAndBrackets
@@ -32,7 +32,7 @@ export function latLonToVec3(lat, lon, r = 1) {
 
 /**
  * Adds thin THREE.Line segments for a GeoJSON Polygon or MultiPolygon geometry.
- * Used by EarthGlobe for country borders (doesn't need thickness > 1px).
+ * Used by WireframeEarth for country borders (doesn't need thickness > 1px).
  * Not used by HoloEarth — it has no coastline or border lines.
  */
 export function addGeoLines(globe, geometry, material, r = 1) {
@@ -45,7 +45,7 @@ export function addGeoLines(globe, geometry, material, r = 1) {
 
 /**
  * Adds thick Line2 segments for a GeoJSON Polygon or MultiPolygon geometry.
- * Used by EarthGlobe for the double-layer glowing coastlines (requires LineMaterial
+ * Used by WireframeEarth for the double-layer glowing coastlines (requires LineMaterial
  * for linewidth > 1px). Not used by HoloEarth.
  */
 export function addThickGeoLines(globe, geometry, material, r = 1) {
@@ -80,7 +80,7 @@ function extractRings(geometry) {
  * Builds a 2048×1024 equirectangular land mask canvas texture.
  * White pixels = land, black = ocean.
  *
- * EarthGlobe only — used by the hex-dot overlay shader (dotShaders.js) to
+ * WireframeEarth only — used by the hex-dot overlay shader (dotShaders.js) to
  * restrict animated dots to landmasses. HoloEarth uses the spec map image
  * (02_earthspec1k.jpg) for the same purpose, sampled on the CPU instead.
  *
@@ -143,6 +143,6 @@ export function drawLandOnCanvas(ctx, W, H) {
 
 /**
  * Exposes world topology data for callers that need to draw coastlines/borders.
- * Used by EarthGlobe only — HoloEarth does not draw geographic lines.
+ * Used by WireframeEarth only — HoloEarth does not draw geographic lines.
  */
 export { worldData, topojson }

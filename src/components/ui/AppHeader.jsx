@@ -138,7 +138,7 @@ export default function AppHeader({
               </select>
             </div>
           )}
-          {/* Hex-dot grid toggle only makes sense in EarthGlobe mode */}
+          {/* Hex-dot grid toggle only makes sense in WireframeEarth mode */}
           {!isHolo && (
             <button
               className={`icon-toggle${showDots ? ' icon-toggle-active' : ''}`}

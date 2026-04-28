@@ -1,7 +1,7 @@
 /**
- * GLSL shaders for the hex-grid dot overlay on EarthGlobe's landmasses.
+ * GLSL shaders for the hex-grid dot overlay on WireframeEarth's landmasses.
  *
- * EarthGlobe only — HoloEarth uses a CPU-built InstancedMesh of sphere dots
+ * WireframeEarth only — HoloEarth uses a CPU-built InstancedMesh of sphere dots
  * instead, coloured from terrain textures via imageUtils.js.
  *
  * The dots are rendered on a sphere mesh just above the surface. A land-mask

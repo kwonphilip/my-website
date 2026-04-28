@@ -29,7 +29,7 @@
  *   setZoom(percent)     — scale the globe to percent% of its default size (100 = default)
  *
  * Why longitudes are shifted:
- *   HoloEarth's globe starts at rotation.y = π so the "front" matches EarthGlobe.
+ *   HoloEarth's globe starts at rotation.y = π so the "front" matches WireframeEarth.
  *   All route and city longitudes are shifted ±180°: lon < 0 → lon+180, lon ≥ 0 → lon−180.
  *
  * Colour modes:   ./HoloEarth/colorModes.js
@@ -264,8 +264,8 @@ const HoloEarth = forwardRef(function HoloEarth(
     s.bloomComposer = bloomComposer
 
     // mainComposer routes the full scene through the same compositor pipeline as
-    // EarthGlobe, ensuring identical sRGB output encoding. No bloom pass here —
-    // the starfield relies solely on matching EarthGlobe's NormalBlending/opacity.
+    // WireframeEarth, ensuring identical sRGB output encoding. No bloom pass here —
+    // the starfield relies solely on matching WireframeEarth's NormalBlending/opacity.
     const mainComposer = new EffectComposer(renderer)
     mainComposer.addPass(new RenderPass(scene, camera))
     s.mainComposer = mainComposer
@@ -293,9 +293,9 @@ const HoloEarth = forwardRef(function HoloEarth(
 
     // ── Globe group ──────────────────────────────────────────────────────
     const globe = new THREE.Group()
-    globe.scale.setScalar(0.9)       // scaled down to match EarthGlobe's world size
+    globe.scale.setScalar(0.9)       // scaled down to match WireframeEarth's world size
     globe.rotation.order = 'XZY'
-    globe.rotation.y     = initialY + PI  // +PI so "front" matches EarthGlobe
+    globe.rotation.y     = initialY + PI  // +PI so "front" matches WireframeEarth
     scene.add(globe)
     s.globe = globe
 
@@ -458,7 +458,7 @@ const HoloEarth = forwardRef(function HoloEarth(
     s.cancelAnim = () => cancelAnimationFrame(rafId)
 
     // ── Drag-to-rotate ──────────────────────────────────────────────────
-    // Mouse + touch logic lives in src/hooks/globeDrag.js — shared with EarthGlobe.
+    // Mouse + touch logic lives in src/hooks/globeDrag.js — shared with WireframeEarth.
     const cleanupDrag = setupGlobeDrag(renderer.domElement, stateRef, camera, {
       zoomDefault:  ZOOM_DEFAULT,
       idleReturnMs: IDLE_RETURN_MS,

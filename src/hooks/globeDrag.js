@@ -1,5 +1,5 @@
 /**
- * Drag-to-rotate utility shared by EarthGlobe and HoloEarth.
+ * Drag-to-rotate utility shared by WireframeEarth and HoloEarth.
  *
  * Before this module, ~100 lines of identical mouse + touch drag logic lived
  * inside each globe component's useEffect. Any bug fix or behaviour tweak had

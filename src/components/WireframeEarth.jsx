@@ -24,8 +24,8 @@
  *   hideBracket()        — hide all brackets
  *   setZoom(percent)     — scale the globe to percent% of its default size (100 = default)
  *
- * Scene geometry:  ./EarthGlobe/buildGlobeScene.js
- * Constants:       ./EarthGlobe/constants.js
+ * Scene geometry:  ./WireframeEarth/buildGlobeScene.js
+ * Constants:       ./WireframeEarth/constants.js
  */
 
 import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
@@ -35,13 +35,13 @@ import { RenderPass }      from 'three/examples/jsm/postprocessing/RenderPass.js
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { ShaderPass }      from 'three/examples/jsm/postprocessing/ShaderPass.js'
 
-import { buildGlobeScene } from './EarthGlobe/buildGlobeScene.js'
+import { buildGlobeScene } from './WireframeEarth/buildGlobeScene.js'
 import { createCityLabelSystem } from '../utils/cityLabels.js'
 import { setupGlobeDrag } from '../hooks/globeDrag.js'
 import {
   ZOOM_DEFAULT, ZOOM_IN, BG_COLOR, RADIUS,
   AXIAL_TILT, AXIAL_TILT_Z, IDLE_RETURN_MS,
-} from './EarthGlobe/constants.js'
+} from './WireframeEarth/constants.js'
 
 const { PI } = Math
 

@@ -5,7 +5,7 @@
  * bump map for elevation heights) and map textures (day, night, etc.) on the
  * CPU for colouring the elevation-dot InstancedMesh and positioning city bars.
  *
- * EarthGlobe does not use these — its land mask is a canvas texture built in
+ * WireframeEarth does not use these — its land mask is a canvas texture built in
  * geo.js, and its dot pattern runs entirely in the GLSL shader (dotShaders.js).
  */
 

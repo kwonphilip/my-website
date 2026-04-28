@@ -129,7 +129,7 @@ export async function buildElevationDots(globe, {
   // citySubGroups[i] corresponds to CITIES[i]; toggle .visible to hide/show one city.
   // getBase samples the bump map so each bar sits just above the terrain dot.
   // Longitudes are shifted ±180° to match HoloEarth's +π globe rotation.
-  // gradBase/gradRange/alphaOuter are higher than EarthGlobe because selective
+  // gradBase/gradRange/alphaOuter are higher than WireframeEarth because selective
   // bloom skips city bars — they must be bright enough on their own.
   const { cityGroup, citySubGroups, buildingMats } = buildCityBuildings(globe, CITIES, {
     buildingColor: 0xddeeff,

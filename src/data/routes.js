@@ -7,7 +7,7 @@
  * To add a route: append [latA, lonA, latB, lonB] with a comment.
  * To remove a route: delete or comment out its row.
  *
- * EarthGlobe uses ROUTES directly — standard coordinates work because the
+ * WireframeEarth uses ROUTES directly — standard coordinates work because the
  * globe starts at rotation.y = 0.
  *
  * HoloEarth's globe is rotated 180° (rotation.y = π), so its routes need

@@ -1,5 +1,5 @@
 /**
- * Assembles all EarthGlobe geometry into a THREE.Group.
+ * Assembles all WireframeEarth geometry into a THREE.Group.
  * Called once on mount; all geometry is added to the returned globe Group,
  * which is then added to the Three.js scene.
  *
@@ -18,7 +18,7 @@
  *
  * To add cities:   edit src/data/cities.js
  * To add routes:   edit src/data/routes.js
- * To adjust bloom: tune UnrealBloomPass params in EarthGlobe.jsx
+ * To adjust bloom: tune UnrealBloomPass params in WireframeEarth.jsx
  * To adjust trails: edit src/shaders/flightShaders.js
  */
 
@@ -86,7 +86,7 @@ export function buildGlobeScene(locations, w, h, labelContainer = null) {
 
   // Nav-location pings and hover brackets.
   // pingPoints[i].visible controls per-location ping visibility (hidden by default).
-  // No bloomLayer here — EarthGlobe uses a global UnrealBloomPass instead.
+  // No bloomLayer here — WireframeEarth uses a global UnrealBloomPass instead.
   const { pingMat, pingPoints, bracketGroups, bracketMat } = buildPingsAndBrackets(globe, locations, {
     pingRadius:     RADIUS * 1.005,
     bracketRadius:  RADIUS * 1.007,
@@ -108,7 +108,7 @@ export function buildGlobeScene(locations, w, h, labelContainer = null) {
   globe.add(dotsMesh)
 
   // City marker bars — tiered cuboid clusters based on population.
-  // EarthGlobe uses a fixed base height (no terrain sampling needed).
+  // WireframeEarth uses a fixed base height (no terrain sampling needed).
   // citySubGroups[i] corresponds to CITIES[i]; toggle .visible to hide/show one city.
   const { cityGroup, citySubGroups, buildingMats } = buildCityBuildings(globe, CITIES, {
     getBase:       (lat, lon) => latLonToVec3(lat, lon, RADIUS * 1.001),
@@ -116,7 +116,7 @@ export function buildGlobeScene(locations, w, h, labelContainer = null) {
   })
 
   // Animated flight lanes — planes + trails.
-  // EarthGlobe uses standard coords (no lon shift needed).
+  // WireframeEarth uses standard coords (no lon shift needed).
   const { lanesMat, lanesGroup, updatePlanes } = buildShippingLanes(globe, ROUTES, {
     orbitRadius: PLANE_ORBIT_RADIUS,
     trailColor:  [0.5, 0.88, 1.0],  // cyan

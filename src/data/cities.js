@@ -1,8 +1,8 @@
 /**
  * Major world cities used for city marker rendering on both globes.
  *
- * Used by both EarthGlobe and HoloEarth via buildCityBars.js.
- * EarthGlobe uses the coordinates as-is.
+ * Used by both WireframeEarth and HoloEarth via buildCityBars.js.
+ * WireframeEarth uses the coordinates as-is.
  * HoloEarth shifts each longitude by ±180° inside its getBase/getLon callbacks
  * to compensate for the globe's +π Y-rotation offset.
  *

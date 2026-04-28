@@ -18,7 +18,7 @@ import './App.css'
 export default function App() {
   // ── Refs ──────────────────────────────────────────────────────────────────
 
-  const globeRef = useRef(null)    // imperative handle for EarthGlobe
+  const globeRef = useRef(null)    // imperative handle for WireframeEarth
   const holoRef  = useRef(null)    // imperative handle for HoloEarth
 
   // mobileNavIdx tracks which nav entry is currently highlighted on mobile so
@@ -124,7 +124,7 @@ export default function App() {
   }, [activeGlobeRef])
 
   // Sync the globe rotation on toggle so the view doesn't jump to a different
-  // longitude when switching between EarthGlobe and HoloEarth.
+  // longitude when switching between WireframeEarth and HoloEarth.
   const handleToggle = useCallback(() => {
     if (!isHolo) {
       const y = globeRef.current?.getRotationY() ?? 0

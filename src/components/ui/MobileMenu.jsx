@@ -10,7 +10,7 @@
  * bar, and schedules auto-rotation to resume after IDLE_RETURN_MS.
  *
  * The hex-dot grid toggle is hidden in holo mode because HoloEarth uses elevation
- * dots instead of the flat hex grid (showDots only applies to EarthGlobe).
+ * dots instead of the flat hex grid (showDots only applies to WireframeEarth).
  */
 import ZoomControl  from './ZoomControl'
 import DetailControl from './DetailControl'
@@ -44,7 +44,7 @@ export default function MobileMenu({
           </select>
         )}
         <div className="mobile-menu-toggles">
-          {/* Hex-dot grid only exists in EarthGlobe, so hide this toggle in holo mode */}
+          {/* Hex-dot grid only exists in WireframeEarth, so hide this toggle in holo mode */}
           {!isHolo && (
             <button
               className={`icon-toggle${showDots ? ' icon-toggle-active' : ''}`}

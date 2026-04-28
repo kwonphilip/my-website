@@ -1,4 +1,4 @@
-// Shared camera + rotation constants (duplicated between EarthGlobe and HoloEarth).
+// Shared camera + rotation constants (duplicated between WireframeEarth and HoloEarth).
 export { ZOOM_DEFAULT, ZOOM_IN, AXIAL_TILT, AXIAL_TILT_Z, IDLE_RETURN_MS } from '../../constants.js'
 
 // ── Selective bloom ───────────────────────────────────────────────────────

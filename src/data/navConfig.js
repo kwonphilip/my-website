@@ -29,7 +29,7 @@ export const NAV_LINKS = [
   { label: 'Contact',  lat: 90.0, lon:    0,   desc: "Santa's workshop" },
 ]
 
-// Standard { lat, lon } targets passed to EarthGlobe.
+// Standard { lat, lon } targets passed to WireframeEarth.
 export const LOCATIONS = NAV_LINKS.map(l => ({ lat: l.lat, lon: l.lon }))
 
 // Shifted { lat, lon } targets passed to HoloEarth.

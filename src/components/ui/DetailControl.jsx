@@ -4,7 +4,7 @@
  * Extracted from App.jsx to own the pending slider state and outside-click wiring,
  * so App only tracks the committed `appliedDetail` value it needs to pass to HoloEarth.
  *
- * Only rendered when `isHolo` is true — EarthGlobe doesn't have elevation dots so
+ * Only rendered when `isHolo` is true — WireframeEarth doesn't have elevation dots so
  * the control has no effect there and is hidden.
  *
  * The popup shows two values side by side:

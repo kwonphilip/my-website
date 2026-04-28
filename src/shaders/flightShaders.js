@@ -1,20 +1,20 @@
 /**
  * GLSL shaders for the animated plane icons and flight trail lines.
- * Used by both EarthGlobe and HoloEarth via buildShippingLanes.js.
+ * Used by both WireframeEarth and HoloEarth via buildShippingLanes.js.
  *
  * Each route has one "dot" (the plane icon, rendered as a gl_Points sprite)
  * and TRAIL_N line segments behind it forming a fading tail.
  *
  * The two globes differ in:
- *   • Trail colour  — EarthGlobe uses cyan [0.5, 0.88, 1.0]; HoloEarth uses white [1, 1, 1].
+ *   • Trail colour  — WireframeEarth uses cyan [0.5, 0.88, 1.0]; HoloEarth uses white [1, 1, 1].
  *                     Set via the trailColor option in buildShippingLanes.js.
- *   • Orbit radius  — EarthGlobe: RADIUS * 1.018 ≈ 0.916 local units.
+ *   • Orbit radius  — WireframeEarth: RADIUS * 1.018 ≈ 0.916 local units.
  *                     HoloEarth:  1.018 local units (globe scale=0.9, so same world size).
  *                     Set via the orbitRadius option in buildShippingLanes.js.
  *   • Bloom         — HoloEarth tags planes and trails with BLOOM_LAYER for selective bloom.
- *                     EarthGlobe relies on its global UnrealBloomPass instead.
+ *                     WireframeEarth relies on its global UnrealBloomPass instead.
  *   • Routes        — HoloEarth passes shiftRoutesForHolo(ROUTES) to compensate for its
- *                     +π Y-rotation; EarthGlobe passes ROUTES directly.
+ *                     +π Y-rotation; WireframeEarth passes ROUTES directly.
  *                     See src/data/routes.js.
  *
  * ── Adjusting the trail ──────────────────────────────────────────────────
@@ -57,7 +57,7 @@ export const TRAIL_DT = 0.008
  * Returns the trail vertex shader source for a given orbit radius.
  *
  * @param {number} orbitRadius  Radius (in local globe units) at which planes fly.
- *   EarthGlobe  uses ~0.916 (RADIUS * 1.018, where RADIUS = 0.9).
+ *   WireframeEarth  uses ~0.916 (RADIUS * 1.018, where RADIUS = 0.9).
  *   HoloEarth   uses ~1.018 (globe local-space, scaled to 0.9 in world space).
  */
 export function makeTrailVert(orbitRadius) {
@@ -116,7 +116,7 @@ export function makeTrailVert(orbitRadius) {
  * @param {number} r  Red channel of the trail colour (0–1).
  * @param {number} g  Green channel.
  * @param {number} b  Blue channel.
- *   EarthGlobe uses cyan  (0.5, 0.88, 1.0).
+ *   WireframeEarth uses cyan  (0.5, 0.88, 1.0).
  *   HoloEarth  uses white (1.0, 1.0,  1.0).
  */
 export function makeTrailFrag(r, g, b) {

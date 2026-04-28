@@ -19,7 +19,7 @@ This is a React + Three.js personal website featuring two interactive 3D globe v
 
 ### Two Globe Components
 
-**`EarthGlobe.jsx`** — Standard globe with coastlines, hex-grid dots, animated flight lanes, city bar charts, and pulsing pings. Uses a selective bloom pipeline (two `EffectComposer` passes: one for the full scene, one for bloom-excluded objects on layer 1).
+**`WireframeEarth.jsx`** — Standard globe with coastlines, hex-grid dots, animated flight lanes, city bar charts, and pulsing pings. Uses a selective bloom pipeline (two `EffectComposer` passes: one for the full scene, one for bloom-excluded objects on layer 1).
 
 **`HoloEarth.jsx`** — Holographic elevation-dot globe. Elevation dots are built async from a terrain image (`src/utils/imageUtils.js`) so the component renders a loading state first. Supports multiple color modes defined in `src/components/HoloEarth/colorModes.js`.
 
@@ -30,7 +30,7 @@ Each globe's Three.js scene is built by calling builder functions rather than co
 - `src/builders/buildShippingLanes.js` — GPU-driven animated flight trails + OBJ airplane models
 - `src/builders/buildCityBuildings.js` — Tiered cuboid city bars by population
 - `src/builders/buildPingsAndBrackets.js` — Pulsing rings + hover brackets at nav locations
-- `src/components/EarthGlobe/buildGlobeScene.js` — Assembles the EarthGlobe scene from builders
+- `src/components/WireframeEarth/buildGlobeScene.js` — Assembles the WireframeEarth scene from builders
 
 All dynamic effects (trails, pings, ring expansions) are driven by shader `time` uniforms updated in the animation loop rather than by rebuilding geometry.
 

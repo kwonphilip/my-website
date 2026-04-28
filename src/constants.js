@@ -1,5 +1,5 @@
 /**
- * Globe constants shared by both EarthGlobe and HoloEarth.
+ * Globe constants shared by both WireframeEarth and HoloEarth.
  * Each component's own constants.js re-exports these alongside its unique values.
  */
 

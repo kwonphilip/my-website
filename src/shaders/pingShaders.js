@@ -1,9 +1,9 @@
 /**
  * GLSL shaders for the pulsing ping rings drawn at nav-link locations.
- * Used by both EarthGlobe and HoloEarth via buildPingsAndBrackets.js.
+ * Used by both WireframeEarth and HoloEarth via buildPingsAndBrackets.js.
  *
  * In HoloEarth the ping Points mesh is tagged with BLOOM_LAYER so the
- * selective bloom composer gives it a glow. In EarthGlobe the global
+ * selective bloom composer gives it a glow. In WireframeEarth the global
  * UnrealBloomPass handles bloom for all objects uniformly.
  *
  * Each ping renders as a gl_Points sprite containing:
