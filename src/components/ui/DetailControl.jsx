@@ -26,7 +26,11 @@ import './DetailControl.css'
 
 export default function DetailControl({ isHolo, holoReady, appliedDetail, onApply }) {
   const [showDetailPopup, setShowDetailPopup] = useState(false)
-  const [pendingDetail,   setPendingDetail]   = useState(100)
+  const [pendingDetail,   setPendingDetail]   = useState(appliedDetail)
+
+  // Keep pendingDetail in sync when appliedDetail changes externally (e.g. applied
+  // via the other DetailControl instance when resizing between mobile and desktop).
+  useEffect(() => { setPendingDetail(appliedDetail) }, [appliedDetail])
   const wrapRef = useRef(null)
 
   // Close when the user clicks anywhere outside the wrapper div.
