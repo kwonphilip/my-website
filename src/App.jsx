@@ -20,7 +20,6 @@ export default function App() {
 
   const globeRef = useRef(null)    // imperative handle for EarthGlobe
   const holoRef  = useRef(null)    // imperative handle for HoloEarth
-  const activeRef = null           // reassigned below based on isHolo
 
   // mobileNavIdx tracks which nav entry is currently highlighted on mobile so
   // we can show its city bar again when the user taps elsewhere (toggle-off).
@@ -184,12 +183,12 @@ export default function App() {
     mobileAutoRotateTimer.current = setTimeout(() => {
       const idx = mobileNavIdx.current
       if (idx !== null) {
-        activeRef.current?.showCityBar(idx)
+        activeGlobeRef.current?.showCityBar(idx)
         mobileNavIdx.current = null
       }
-      activeRef.current?.hideBracket()
-      activeRef.current?.hideAllPings()
-      activeRef.current?.resumeAutoRotate()
+      activeGlobeRef.current?.hideBracket()
+      activeGlobeRef.current?.hideAllPings()
+      activeGlobeRef.current?.resumeAutoRotate()
       setMobileZoomedLabel(null)
     }, IDLE_RETURN_MS)
   }, [active, activeGlobeRef, clearMobileMarkers])
@@ -272,7 +271,7 @@ export default function App() {
         <HeroSection
           typedWords={typedWords}
           active={active}
-          onSnowmanClick={() => { clearMobileMarkers(); activeRef.current?.setPoleView() }}
+          onSnowmanClick={() => { clearMobileMarkers(); activeGlobeRef.current?.setPoleView() }}
         />
 
         <HudReadout
