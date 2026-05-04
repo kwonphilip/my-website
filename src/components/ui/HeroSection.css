@@ -87,6 +87,21 @@
   white-space: pre;
 }
 
+.hero-detail-desc a {
+  color: #7dd3fc;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+
+.hero-detail-desc a:visited {
+  color: #d8b4fe;
+}
+
+.hero-detail-desc a:hover {
+  color: #ffffff;
+}
+
 .hero-detail-link {
   background: none;
   border: none;

@@ -22,11 +22,10 @@
 import { CITIES } from './cities.js'
 
 export const NAV_LINKS = [
-  { label: 'About',    lat: 40.7, lon: -73.9,  desc: 'Current:\n\tSoftware Developer\nHistory:\n\tMechanical Engineer\n\tIP\\Patent Attorney' },
-  { label: 'Hobbies',  lat: 34.1, lon: -118.2, desc: 'Brazilian Jiu-Jitsu\nMuai Thai\nCycling\nReading' },
-  { label: 'TEMP 1',   lat: 37.6, lon:  127.0, desc: 'Coming soon...' },
-  { label: 'TEMP 2',   lat: 48.9, lon:    2.4, desc: 'Coming soon...' },
-  { label: 'Contact',  lat: 90.0, lon:    0,   desc: "Santa's workshop" },
+  { label: 'About',     lat: 40.7, lon: -73.9,  desc: 'Current:\n\tSoftware Developer\nHistory:\n\tMechanical Engineer\n\tIP\\Patent Attorney' },
+  { label: 'Hobbies',   lat: 34.1, lon: -118.2, desc: 'Brazilian Jiu-Jitsu\nMuai Thai\nCycling\nReading' },
+  { label: 'Portfolio', lat: 48.9, lon: 2.4,    desc: null },
+  { label: 'Contact',   lat: 90.0, lon: 0.0,    desc: "Santa's workshop" },
 ]
 
 // Standard { lat, lon } targets passed to WireframeEarth.

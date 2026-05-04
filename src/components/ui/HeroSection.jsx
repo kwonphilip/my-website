@@ -117,6 +117,25 @@ export default function HeroSection({ typedWords, active, onSnowmanClick }) {
             <span className="hero-detail-desc">
               {NAV_LINKS.find(l => l.label === active)?.desc}
             </span>
+            {active === 'Portfolio' && (
+              <span className="hero-detail-desc">
+                <a href='https://github.com/kwonphilip?tab=repositories' target='_blank' rel='noopener noreferrer'>
+                  View my GitHub projects
+                </a><br/>
+                <a href='https://kwonphilip.github.io/3d-city/' target='_blank' rel='noopener noreferrer'>
+                  3D Model of New York City
+                </a><br/>
+                <a href='https://kwonphilip.github.io/etch-a-sketch/' target='_blank' rel='noopener noreferrer'>
+                  Play with the Etch-a-Sketch
+                </a><br/>
+                <a href='https://kwonphilip.github.io/library/' target='_blank' rel='noopener noreferrer'>
+                  Library Inventory App
+                </a><br/>
+                <a href='https://kwonphilip.github.io/rock-paper-scissors/' target='_blank' rel='noopener noreferrer'>
+                  Rock Paper Scissors - A Classic!
+                </a>
+              </span>
+            )}
             {active === 'Contact' && (
               <button className="hero-detail-link" onClick={onSnowmanClick}>
                 Visit the Workshop →
