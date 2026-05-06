@@ -92,7 +92,7 @@ export default function App() {
   // Close the mobile menu and clear markers when the window grows past mobile breakpoint.
   useEffect(() => {
     const onResize = () => {
-      if (window.innerWidth > 900) {
+      if (window.innerWidth > 1100) {
         setMenuOpen(false)
         clearMobileMarkers()
       }
